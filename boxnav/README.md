@@ -8,72 +8,65 @@ A simple playground for making an agent navigate around some directed corridors 
 
 ### Dependencies
 
-Unreal Engine is needed for data collection, and you will want to either download our packaged game or the version on Gitea. You will also need to install [ue5osc](https://github.com/arcslaboratory/ue5osc) using the instructions found in its README.
+Unreal Engine is needed for data collection, and you will want to either download our packaged simulation or the Unreal Engine 5 (UE) project from our shared Box folder. You will also need to install [ue5osc](https://github.com/arcslaboratory/OldenborgAutonomousNavigation/tree/main/ue5osc) using  instructions found in its README.
 
 ### Beginning the Simulation in UE5
-Clone this repository. Move into the cloned boxnav directory. Press play on your Unreal Engine project.
+
+Start the simulation by running the packaged simulation or pushing "play" inside the UE editor.
 
 Then to kick off the simulation you must first ensure the following steps are followed:
 
-1. First, create and activate an anaconda environment.
+1. If you do not have an Anaconda environment, create one with the following command (replace `ENVIRONMENT` with the name of your environment):
 
-~~~
-conda create --name <env_name>
-conda activate <env_name>
-~~~
+    ~~~bash
+    conda create --name ENVIRONMENT
+    conda activate ENVIRONMENT
+    conda install python matplotlib celluloid
+    cd ue5osc
+    python -m pip install --editable .
+    ~~~
 
-2. Next, install the needed libraries.
+2. On subsequent runs, you need only activate the environment:
 
-~~~
-conda install python matplotlib celluloid
-~~~
+    ~~~bash
+    conda activate ENVIRONMENT
+    ~~~
 
-3. After cloning the ue5osc library, navigate into this repository and install this library with:
+3. The script is now ready to run with the commands:
 
-```
-cd ue5osc
-python -m pip install --editable .
-```
+    ~~~bash
+    # Runs the navigator in Python
+    python boxsim.py NAVIGATOR
 
-4. Now every time you want to run the Boxnav script you must ensure you open the environment with:
+    # Runs the navigator in Python and generates an animated gif
+    python boxsim.py NAVIGATOR --anim_ext gif
 
-```
-conda activate <env_name>
-```
+    # Runs the navigator in Python and UE (either the editor or packaged simulation)
+    python boxsim.py NAVIGATOR --ue
 
-5. After activating the environment, the script is now ready to run with the commands:
+    # Runs the navigator in Python and and UE, and save images to the specified path
+    python boxsim.py NAVIGATOR --save_images 'PATH/TO/DATASET'
 
-~~~bash
-# Runs the navigator in Python
-python boxsim.py <navigator>
-
-# Runs the navigator in Python and generates an animated gif
-python boxsim.py <navigator> --anim_ext gif
-
-# Runs the navigator in Python and Unreal Engine
-python boxsim.py <navigator> --ue
-
-# Runs the navigator in Python and Unreal Engine and generates a dataset
-python boxsim.py <navigator> --save_images 'path/to/dataset'
-
-# ffmpeg.exe -i "%03d.png" video.mp4
-~~~
+    # If desired, you can convert the images to a video using ffmpeg
+    ffmpeg.exe -i "%03d.png" video.mp4
+    ~~~
 
 ### Note about Command Line Arguments
 
-The commands above showcase some examples as to how the script can be ran. Please look into the boxsim.py file for details over the arguments that can be passed.
+The commands above showcase some examples as to how the script can be ran. Please look into the `boxsim.py` file for details over the arguments that can be passed.
 
 ### Notes about Unreal Engine
 
-- In our packaged 'game' you can add the following lines into the Game.ini file found in either:
-    - MacOS: (Hidden folder) \<Packaged_Game_Name>\Epic\ARCSAssets\Saved\Config\Mac
-    - Windows: \<Packaged_Game_Name>\ARCSAssets\Saved\Config\Windows
-```
+- In our packaged simulation you can add the following lines into the Game.ini file found in either:
+  - MacOS: (Hidden folder) `\<Packaged_Game_Name>\Epic\ARCSAssets\Saved\Config\Mac`
+  - Windows: `\<Packaged_Game_Name>\ARCSAssets\Saved\Config\Windows`
+
+~~~ini
 [/ARCSRobots/SimpleRobotCamera/BP_Pawn_SimpleRobotCamera.BP_Pawn_SimpleRobotCamera_C]
-UEPort=<port>
-PyPort=<port>
-RobotVisible=<Bool>
-```
+UEPort=UE_PORT
+PyPort=PY_PORT
+RobotVisible=ROBOT_VISIBLE
+~~~
 
 ### Other Notes
 

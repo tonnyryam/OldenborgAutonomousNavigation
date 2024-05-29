@@ -6,6 +6,6 @@ To install the package locally:
 
 ```bash
 # First activate the virtual environment
-conda activate ...
+conda activate ENVIRONMENT
 python -m pip install --editable .
 ```
