@@ -49,7 +49,7 @@ def parse_args():
     arg_parser.add_argument(
         "--max-actions",
         type=int,
-        default=500,
+        default=10,
         help="Maximum number of actions to take.",
     )
     return arg_parser.parse_args()
@@ -78,7 +78,7 @@ def main():
     # Download the fastai learner
     artifact = run.use_artifact(f"{wandb_model}:latest", type="model")
     model_dir = artifact.download()
-    model_filename = Path(model_dir) / wandb_model
+    model_filename = Path(model_dir) / (wandb_model + ".pkl")
 
     # Load the learner and its model
     # TODO: this doesn't load the "best" model, but the last one
