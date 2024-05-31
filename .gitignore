@@ -1,3 +1,25 @@
+*.png
+
+# https://github.com/wandb/examples/blob/master/.gitignore
+*.swp
+.python-version
+wandb
+wandb-debug.log
+__pycache__
+.ipynb_checkpoints
+.DS_Store
+logs
+summary*
+run*
+colabs/dataset/*
+colabs/train_data/*
+colabs/output/*
+MNIST/*
+log.txt
+colabs/log.txt
+artifacts
+examples/jax/jax-llm/proteins-base/
+
 # Created by https://www.toptal.com/developers/gitignore/api/macos,visualstudiocode,python
 # Edit at https://www.toptal.com/developers/gitignore?templates=macos,visualstudiocode,python
 
@@ -8,7 +30,8 @@
 .LSOverride
 
 # Icon must end with two \r
-Icon
+Icon
+
 
 # Thumbnails
 ._*
