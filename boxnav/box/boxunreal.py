@@ -32,7 +32,7 @@ class UENavigatorWrapper:
 
         self.raycast_length = movement_increment
 
-        self.trial_num = 1
+        self.trial_num = 0
         self.images_saved = 1
         self.image_ext = image_ext
         self.num_stationary_moves = 0
