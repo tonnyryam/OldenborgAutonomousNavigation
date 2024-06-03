@@ -112,6 +112,8 @@ def simulate(args: Namespace) -> None:
             # else:
             #     print(f"Agent was unable to reach final target within {num_actions} actions.")
             agent.reset()
+            if args.stop_after_one_trial:
+                break
 
         try:
             _ = agent.take_action()
