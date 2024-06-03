@@ -17,25 +17,34 @@ Code for training machine learning models to navigate our Oldenborg simulation e
 For example,
 
 ~~~bash
+# Activate the environment
+conda activate ENVIRONMENT
+
 # Runs a navigator in Python and the simulation environment
 # This will run on a system that can run Unreal Engine
+# Open unreal engine before running code (ie. ARCSAssets.exe)
+    # This will steal your mouse, run on split screen and use Alt+tab to navigate between screens 
 cd boxnav
-python boxsim.py wandering --save_images data/
+python boxsim.py NAVIGATOR --save_images IMAGE_DIRECTORY
 
 # Uploads the dataset to the server
 # You can upload from wherever the data is generated (probably the same system as above)
+# For first time: Terminal will ask you to log-in to wandb 
+    # *When asked to authorize, authentication code will be hidden when pasted so hit
+    # ctrl+v once and hit enter
 cd learning
-python upload_data.py PerfectStaticData TestingWorkflow "I am using this project to test the upload, train, then inference workflow." data/
+python upload_data.py DATA_NAME PROJECT_NAME "Sample description of uploading run..." IMAGE_DIRECTORY
 
 # Trains the model
 # This should be run on a system with a GPU (e.g., our server)
 cd learning
-python training.py PerfectStaticModel TestingWorkflow "Testing training..." resnet18 PerfectStaticData
+python training.py MODEL_NAME PROJECT_NAME "Sample description of training run..." ARCHITECTURE_NAME DATA_NAME
 
 # Performs inference
 # This will run on a system that can run Unreal Engine
+# Note: MODEL_NAME_FROM_WANDB can be found in arcslaboratory -> Projects -> PROJECT_NAME -> Artifacts
 cd learning
-python inference.py PerfectStaticInference TestingWorkflow "Testing inference..." PerfectStaticModel-resnet18-PerfectStaticData-rep00 InferenceImages
+python inference.py INFERENCE_NAME PROJECT_NAME "Sample description of inference run..." MODEL_NAME_FROM_WANDB IMAGE_SAVE_FOLDER_NAME
 ~~~
 
 Notice that the first program argument for uploading, training, and inference is the name of the artifact created by that step.
