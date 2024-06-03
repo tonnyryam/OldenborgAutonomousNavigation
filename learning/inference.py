@@ -5,12 +5,12 @@ from contextlib import contextmanager
 from pathlib import Path
 from time import sleep
 
+import wandb
 from fastai.callback.wandb import WandbCallback
 from fastai.vision.learner import load_learner
-from ue5osc import Communicator
-
-import wandb
 from utils import y_from_filename  # noqa: F401 (needed for fastai load_learner)
+
+from ue5osc import Communicator
 
 
 @contextmanager
@@ -47,7 +47,7 @@ def parse_args():
         help="Rotation per action (in degrees for ue5osc).",
     )
     arg_parser.add_argument(
-        "--max-actions",
+        "--max_actions",
         type=int,
         default=10,
         help="Maximum number of actions to take.",
