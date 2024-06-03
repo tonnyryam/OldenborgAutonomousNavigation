@@ -5,14 +5,14 @@ from pathlib import Path
 from random import randrange
 
 import matplotlib.pyplot as plt
-from celluloid import Camera
-from tqdm import tqdm
-from ue5osc import TexturedSurface
-
 from box.box import Pt, aligned_box
 from box.boxenv import BoxEnv
 from box.boxnavigator import PerfectNavigator, TeleportingNavigator, WanderingNavigator
 from box.boxunreal import UENavigatorWrapper
+from celluloid import Camera
+from tqdm import tqdm
+
+from ue5osc import TexturedSurface
 
 # TODO: this should probably be a command line argument (pass in a list of coordinates)
 # route 2, uses path w/ water fountain & stairs
@@ -38,7 +38,7 @@ def check_path(directory: str) -> None:
         raise ValueError(f"Directory {path} is not empty.")
 
 
-def simulate(args: Namespace, trial_num: int) -> None:
+def simulate(args: Namespace) -> None:
     """Create and update the box environment and run the navigator."""
 
     box_env = BoxEnv(boxes)
@@ -75,7 +75,6 @@ def simulate(args: Namespace, trial_num: int) -> None:
             args.py_port,
             args.ue_port,
             args.image_ext,
-            trial_num,
             args.movement_increment,
             args.resolution,
             # TODO: add quality level as a command line argument?
@@ -87,6 +86,7 @@ def simulate(args: Namespace, trial_num: int) -> None:
     camera = Camera(fig)
 
     """
+    # TODO: for AJC to try out later
     import enlighten
 
     manager = enlighten.get_manager()
@@ -103,23 +103,25 @@ def simulate(args: Namespace, trial_num: int) -> None:
 
     manager.stop()
     """
-    for _ in tqdm(range(args.max_actions)):
-    # while not agent.stuck and (
-    #     not agent.at_final_target() and agent.num_actions_taken() < args.max_actions
-    # ):
-        if agent.stuck:
-            break
 
-        if agent.at_final_target():
-            break
+    for _ in tqdm(range(args.max_total_actions), desc="Actions taken"):
+        if agent.stuck or agent.at_final_target():
+            # num_actions = agent.num_actions_taken()
+            # if agent.at_final_target():
+            #     print(f"Agent reached final target in {num_actions} actions.")
+            # else:
+            #     print(f"Agent was unable to reach final target within {num_actions} actions.")
+            agent.reset()
 
         try:
             _ = agent.take_action()
+
         except TimeoutError as e:
             print(e)
             if is_ue_navigator:
                 agent.ue.close_osc()
             raise SystemExit
+
         except Exception as e:
             print(e)
             if is_ue_navigator:
@@ -127,6 +129,7 @@ def simulate(args: Namespace, trial_num: int) -> None:
             raise SystemExit
 
         if is_ue_navigator:
+            # TODO: turn "20" into a command line argument
             if agent.num_actions_taken() % 20 == 0 and args.randomize:
                 random_surface = random.choice(list(TexturedSurface))
                 agent.ue.set_texture(random_surface, randrange(42))
@@ -142,12 +145,6 @@ def simulate(args: Namespace, trial_num: int) -> None:
         agent.ue.close_osc()
 
     print("Simulation complete.", end=" ")
-
-    num_actions = agent.num_actions_taken()
-    if agent.at_final_target():
-        print(f"Agent reached final target in {num_actions} actions.")
-    else:
-        print(f"Agent was unable to reach final target within {num_actions} actions.")
 
     if args.anim_ext:
         output_filename = None
@@ -178,10 +175,6 @@ def main():
     argparser.add_argument("--anim_ext", type=str, help="Output format for animation.")
 
     argparser.add_argument(
-        "--max_actions", type=int, default=10, help="Maximum allowed actions."
-    )
-
-    argparser.add_argument(
         "--save_images",
         type=str,
         help="Directory in which images should be saved (no images saved otherwise).",
@@ -200,7 +193,10 @@ def main():
     )
 
     argparser.add_argument(
-        "--resolution", type=str, default="244x244", help="Set resolution of images as ResXxResY."
+        "--resolution",
+        type=str,
+        default="244x244",
+        help="Set resolution of images as ResXxResY.",
     )
 
     argparser.add_argument(
@@ -208,10 +204,17 @@ def main():
     )
 
     argparser.add_argument(
-        "--num_trials",
+        "--max_total_actions",
         type=int,
-        default=1,
-        help="Set the number of trials to execute.",
+        default=10,
+        help="Maximum total allowed actions across all trials.",
+    )
+
+    argparser.add_argument(
+        "--stop_after_one_trial",
+        type=bool,
+        default=False,
+        help="Stop after one time through the environment (for debugging).",
     )
 
     argparser.add_argument(
@@ -238,7 +241,7 @@ def main():
     argparser.add_argument(
         "--randomize",
         type=bool,
-        default=True,
+        default=False,
         action=BooleanOptionalAction,
         help="Randomizes the texture of the walls, floors, and ceilings.",
     )
@@ -257,8 +260,7 @@ def main():
     if args.save_images:
         check_path(args.save_images)
 
-    for trial in range(1, args.num_trials + 1):
-        simulate(args, trial)
+    simulate(args)
 
 
 if __name__ == "__main__":

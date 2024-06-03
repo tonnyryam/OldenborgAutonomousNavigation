@@ -44,17 +44,24 @@ class BoxNavigatorBase:
             env (BoxEnv): box environment
         """
         self.env = env
-        self.position = position
-        self.rotation = rotation
 
-        self.target = self.env.boxes[0].target
-        self.final_target = self.env.boxes[-1].target
+        self.initial_position = position
+        self.initial_rotation = rotation
 
         # TODO: find appropriate values for these
         self.distance_threshold = distance_threshold
         self.movement_increment = movement_increment
         self.rotation_increment = rotation_increment
         self.half_target_wedge = radians(6)
+
+        self.reset()
+
+    def reset(self) -> None:
+        self.position = self.initial_position
+        self.rotation = self.initial_rotation
+
+        self.target = self.env.boxes[0].target
+        self.final_target = self.env.boxes[-1].target
 
         self.actions_taken = 0
         self.stuck = False  # Can only be True in unreal wrapper
@@ -371,7 +378,6 @@ class TeleportingNavigator(BoxNavigatorBase):
     # TODO: note sure if this function is needed, currently putting it here so that we can collect
     # images without saving an animation.
     def set_ahead_box(self) -> None:
-
         # TODO: don't hardcode this...
         scale = 300
 
