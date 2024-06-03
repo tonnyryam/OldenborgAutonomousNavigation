@@ -5,14 +5,14 @@ from pathlib import Path
 from random import randrange
 
 import matplotlib.pyplot as plt
-from celluloid import Camera
-from tqdm import tqdm
-from ue5osc import TexturedSurface
-
 from box.box import Pt, aligned_box
 from box.boxenv import BoxEnv
 from box.boxnavigator import PerfectNavigator, TeleportingNavigator, WanderingNavigator
 from box.boxunreal import UENavigatorWrapper
+from celluloid import Camera
+from tqdm import tqdm
+
+from ue5osc import TexturedSurface
 
 # TODO: this should probably be a command line argument (pass in a list of coordinates)
 # route 2, uses path w/ water fountain & stairs
@@ -38,7 +38,7 @@ def check_path(directory: str) -> None:
         raise ValueError(f"Directory {path} is not empty.")
 
 
-def simulate(args: Namespace, trial_num: int) -> None:
+def simulate(args: Namespace, actions_taken_so_far: int, trial_num: int) -> int:
     """Create and update the box environment and run the navigator."""
 
     box_env = BoxEnv(boxes)
@@ -87,6 +87,7 @@ def simulate(args: Namespace, trial_num: int) -> None:
     camera = Camera(fig)
 
     """
+    # TODO: for AJC to try out later
     import enlighten
 
     manager = enlighten.get_manager()
@@ -103,23 +104,20 @@ def simulate(args: Namespace, trial_num: int) -> None:
 
     manager.stop()
     """
-    for _ in tqdm(range(args.max_actions)):
-    # while not agent.stuck and (
-    #     not agent.at_final_target() and agent.num_actions_taken() < args.max_actions
-    # ):
-        if agent.stuck:
-            break
-
-        if agent.at_final_target():
+    while actions_taken_so_far < args.max_total_actions:
+        if agent.stuck or agent.at_final_target():
             break
 
         try:
             _ = agent.take_action()
+            actions_taken_so_far += 1
+
         except TimeoutError as e:
             print(e)
             if is_ue_navigator:
                 agent.ue.close_osc()
             raise SystemExit
+
         except Exception as e:
             print(e)
             if is_ue_navigator:
@@ -127,6 +125,7 @@ def simulate(args: Namespace, trial_num: int) -> None:
             raise SystemExit
 
         if is_ue_navigator:
+            # TODO: turn "20" into a command line argument
             if agent.num_actions_taken() % 20 == 0 and args.randomize:
                 random_surface = random.choice(list(TexturedSurface))
                 agent.ue.set_texture(random_surface, randrange(42))
@@ -159,6 +158,8 @@ def simulate(args: Namespace, trial_num: int) -> None:
         anim.save(output_filename)
         print(f"Animation saved to {output_filename}.")
 
+    return actions_taken_so_far
+
 
 def main():
     """Parse arguments and run simulation."""
@@ -176,10 +177,6 @@ def main():
     #
 
     argparser.add_argument("--anim_ext", type=str, help="Output format for animation.")
-
-    argparser.add_argument(
-        "--max_actions", type=int, default=10, help="Maximum allowed actions."
-    )
 
     argparser.add_argument(
         "--save_images",
@@ -200,7 +197,10 @@ def main():
     )
 
     argparser.add_argument(
-        "--resolution", type=str, default="244x244", help="Set resolution of images as ResXxResY."
+        "--resolution",
+        type=str,
+        default="244x244",
+        help="Set resolution of images as ResXxResY.",
     )
 
     argparser.add_argument(
@@ -208,7 +208,14 @@ def main():
     )
 
     argparser.add_argument(
-        "--num_trials",
+        "--max_total_actions",
+        type=int,
+        default=10,
+        help="Maximum total allowed actions across all trials.",
+    )
+
+    argparser.add_argument(
+        "--max_num_trials",
         type=int,
         default=1,
         help="Set the number of trials to execute.",
@@ -257,8 +264,12 @@ def main():
     if args.save_images:
         check_path(args.save_images)
 
-    for trial in range(1, args.num_trials + 1):
-        simulate(args, trial)
+    total_actions = 0
+    for trial in range(1, args.max_num_trials + 1):
+        total_actions = simulate(args, total_actions, trial)
+
+        if total_actions >= args.max_total_actions:
+            break
 
 
 if __name__ == "__main__":
