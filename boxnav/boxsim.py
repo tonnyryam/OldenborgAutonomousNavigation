@@ -38,7 +38,7 @@ def check_path(directory: str) -> None:
         raise ValueError(f"Directory {path} is not empty.")
 
 
-def simulate(args: Namespace, actions_taken_so_far: int, trial_num: int) -> int:
+def simulate(args: Namespace) -> None:
     """Create and update the box environment and run the navigator."""
 
     box_env = BoxEnv(boxes)
@@ -75,7 +75,6 @@ def simulate(args: Namespace, actions_taken_so_far: int, trial_num: int) -> int:
             args.py_port,
             args.ue_port,
             args.image_ext,
-            trial_num,
             args.movement_increment,
             args.resolution,
             # TODO: add quality level as a command line argument?
@@ -104,13 +103,18 @@ def simulate(args: Namespace, actions_taken_so_far: int, trial_num: int) -> int:
 
     manager.stop()
     """
-    while actions_taken_so_far < args.max_total_actions:
+
+    for _ in tqdm(range(args.max_total_actions), desc="Actions taken"):
         if agent.stuck or agent.at_final_target():
-            break
+            # num_actions = agent.num_actions_taken()
+            # if agent.at_final_target():
+            #     print(f"Agent reached final target in {num_actions} actions.")
+            # else:
+            #     print(f"Agent was unable to reach final target within {num_actions} actions.")
+            agent.reset()
 
         try:
             _ = agent.take_action()
-            actions_taken_so_far += 1
 
         except TimeoutError as e:
             print(e)
@@ -142,12 +146,6 @@ def simulate(args: Namespace, actions_taken_so_far: int, trial_num: int) -> int:
 
     print("Simulation complete.", end=" ")
 
-    num_actions = agent.num_actions_taken()
-    if agent.at_final_target():
-        print(f"Agent reached final target in {num_actions} actions.")
-    else:
-        print(f"Agent was unable to reach final target within {num_actions} actions.")
-
     if args.anim_ext:
         output_filename = None
         num = 1
@@ -157,8 +155,6 @@ def simulate(args: Namespace, actions_taken_so_far: int, trial_num: int) -> int:
         anim = camera.animate()
         anim.save(output_filename)
         print(f"Animation saved to {output_filename}.")
-
-    return actions_taken_so_far
 
 
 def main():
@@ -215,10 +211,10 @@ def main():
     )
 
     argparser.add_argument(
-        "--max_num_trials",
-        type=int,
-        default=1,
-        help="Set the number of trials to execute.",
+        "--stop_after_one_trial",
+        type=bool,
+        default=False,
+        help="Stop after one time through the environment (for debugging).",
     )
 
     argparser.add_argument(
@@ -245,7 +241,7 @@ def main():
     argparser.add_argument(
         "--randomize",
         type=bool,
-        default=True,
+        default=False,
         action=BooleanOptionalAction,
         help="Randomizes the texture of the walls, floors, and ceilings.",
     )
@@ -264,12 +260,7 @@ def main():
     if args.save_images:
         check_path(args.save_images)
 
-    total_actions = 0
-    for trial in range(1, args.max_num_trials + 1):
-        total_actions = simulate(args, total_actions, trial)
-
-        if total_actions >= args.max_total_actions:
-            break
+    simulate(args)
 
 
 if __name__ == "__main__":

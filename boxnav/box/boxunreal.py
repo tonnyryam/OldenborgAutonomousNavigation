@@ -18,7 +18,6 @@ class UENavigatorWrapper:
         py_server_port: int,
         ue_server_port: int,
         image_ext: str,
-        trial_num: int,
         movement_increment: float,
         resolution: str,
         quality_level: int = 1,
@@ -33,7 +32,7 @@ class UENavigatorWrapper:
 
         self.raycast_length = movement_increment
 
-        self.trial_num = trial_num
+        self.trial_num = 1
         self.images_saved = 1
         self.image_ext = image_ext
         self.num_stationary_moves = 0
@@ -71,6 +70,8 @@ class UENavigatorWrapper:
 
     def reset(self) -> None:
         """Resets agent to its initial position."""
+        self.trial_num += 1
+        self.navigator.reset()
         return self.ue.reset()
 
     def __getattr__(self, attr):
