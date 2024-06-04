@@ -13,6 +13,9 @@ class TexturedSurface(IntEnum):
     CEILING = 2
 
 
+textureObject = TexturedSurface(0)
+
+
 class Communicator:
     """This handles interaction between the UE5 environment and a Python script."""
 
@@ -129,5 +132,8 @@ class Communicator:
         # The python OSC library send_message method always requires a value
         self.client.send_message("/reset", 0.0)
         # quality
+        self.set_quality(4)
         # textures
+        self.set_texture(textureObject, 0.0)
         # aspect ratio
+        self.set_resolution("224x224")
