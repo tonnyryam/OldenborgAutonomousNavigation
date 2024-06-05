@@ -101,10 +101,9 @@ def main():
         return
 
     with Communicator("127.0.0.1", ue_port=7447, py_port=7001) as ue:
-        ue.set_resolution("224x224")
+        ue.reset()
         print("Connected to", ue.get_project_name())
         print("Saving images to", output_dir)
-        ue.reset()
 
         for action_step in range(args.max_actions):
             # Save image

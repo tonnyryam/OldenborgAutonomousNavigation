@@ -1,4 +1,5 @@
 import threading
+from time import sleep
 
 from pythonosc import udp_client
 from pythonosc.osc_server import BlockingOSCUDPServer
@@ -132,8 +133,9 @@ class Communicator:
         # The python OSC library send_message method always requires a value
         self.client.send_message("/reset", 0.0)
         # quality
-        self.set_quality(4)
+        # self.set_quality(4)
         # textures
-        self.set_texture(textureObject, 0.0)
+        # self.set_texture(textureObject, 0.0)
         # aspect ratio
-        self.set_resolution("224x224")
+        self.set_resolution("244x244")
+        sleep(1)
