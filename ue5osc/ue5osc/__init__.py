@@ -14,7 +14,8 @@ class TexturedSurface(IntEnum):
     CEILING = 2
 
 
-textureObject = TexturedSurface(0)
+# creating an object to use "set_texture" for the "reset" function
+# textureObject = TexturedSurface(0)
 
 
 class Communicator:
@@ -132,6 +133,7 @@ class Communicator:
         """Reset agent to the start location using a UE Blueprint command."""
         # The python OSC library send_message method always requires a value
         self.client.send_message("/reset", 0.0)
+        # TODO: add reasonable deafults
         # quality
         # self.set_quality(4)
         # textures

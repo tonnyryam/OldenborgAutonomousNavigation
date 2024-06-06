@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from time import sleep
 import math
+import boxenv
 
 import wandb
 from fastai.callback.wandb import WandbCallback
@@ -57,36 +58,29 @@ def parse_args():
 
 
 targets = [
-    # 710 between start and 1st target
-    [4940, 870],
-    # 940 between 1st and 2nd
-    [4000, 870],
-    # 470
-    [4000, 400],
-    # 3745
-    [255, 400],
-    # 2250
-    [255, -1850],
-    # 1080
-    [-825, -1850],
-    # 4335
-    [-825, 2485],
-    # 975
-    [150, 2485],
-    # 14,515 total distance for perfect path
-]
-distance_between_targets = [
-    710,
-    940,
-    470,
-    3745,
-    2250,
-    1080,
-    4335,
-    975,
+    (4940, 870),
+    (4000, 870),
+    (4000, 400),
+    (255, 400),
+    (255, -1850),
+    (-825, -1850),
+    (-825, 2485),
+    (150, 2485),
 ]
 
 
+def dist(a: tuple[int, int], b: tuple[int, int]) -> float:
+    dx = a[0] - b[0]
+    dy = a[1] - b[1]
+    return math.sqrt(dx * dx + dy * dy)
+
+
+# 710 is the distance between where agent starts and first target
+# didn't add coordinates for starting point in targets since it isn't a target
+distance_between_targets = [710, (dist(a, b) for a, b in zip(targets, targets[1:]))]
+
+
+# TODO: use boxenv.py for this functionality
 def reach_target(num_hit, coords):
     if coords[0] in range(
         targets[num_hit][0] - 20, targets[num_hit][0] + 20
@@ -147,6 +141,7 @@ def main():
         targets_reached = 0
         distance = 0
 
+        previous_action = ""
         for action_step in range(args.max_actions):
             # Save image
             image_filename = f"{output_dir}/{action_step:04}.png"
@@ -157,10 +152,20 @@ def main():
             action_to_take, action_index, action_probs = model.predict(image_filename)
             action_prob = action_probs[action_index]
 
+            # Prevent cycling actions (e.g., left followed by right)
+            if action_to_take == "left" and previous_action == "right":
+                action_prob = action_probs.argsort()[1]
+                action_to_take = model.dls.vocab[action_probs.argsort()[1]]
+            elif action_to_take == "right" and previous_action == "left":
+                action_prob = action_probs.argsort()[1]
+                action_to_take = model.dls.vocab[action_probs.argsort()[1]]
+
+            # set previous_action
+            previous_action = action_to_take
+
             print(f"Moving {action_to_take} with probabilities {action_prob:.2f}")
 
             # Take action
-            # TODO: prevent cycling actions (e.g., left followed by right)
             match action_to_take:
                 case "forward":
                     ue.move_forward(args.movement_amount)
@@ -172,6 +177,7 @@ def main():
                     raise ValueError(f"Unknown action: {action_to_take}")
 
             # progress through environment
+            # TODO: use boxenv for this functionality
 
             (x, y, z) = ue.get_location()
 
