@@ -132,6 +132,7 @@ class Communicator:
         """Reset agent to the start location using a UE Blueprint command."""
         # The python OSC library send_message method always requires a value
         self.client.send_message("/reset", 0.0)
+        # TODO: add reasonable deafults
         # quality
         # self.set_quality(4)
         # textures
@@ -139,3 +140,4 @@ class Communicator:
         # aspect ratio
         self.set_resolution("244x244")
         sleep(1)
+
