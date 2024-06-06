@@ -4,6 +4,20 @@
 
 A simple playground for making an agent navigate around some directed corridors represented as overlapping boxes.
 
+## Description of the `boxnav` Package
+
+~~~bash
+ boxnav/
+├──  __init__.py      # Initializes the boxnav package (runs on import)
+├──  box.py           # Simple functionality for a box in the x-y plane
+├──  boxenv.py        # A list of overlapping boxes
+├──  environments.py  # A list of environments
+├──  boxnavigator.py  # Python-only navigation functionality
+│                      # - shared functionality implemented in BoxNavigatorBase
+│                      # - child classes implement specific navigation behaviors
+└──  boxunreal.py     # Adds communication with UE to a child navigator
+~~~
+
 ## Getting Started in Unreal Engine
 
 ### Dependencies
@@ -22,6 +36,7 @@ Then to kick off the simulation you must first ensure the following steps are fo
     conda create --name ENVIRONMENT
     conda activate ENVIRONMENT
     conda install python matplotlib celluloid
+    python -m pip install --editable .
     cd ue5osc
     python -m pip install --editable .
     ~~~

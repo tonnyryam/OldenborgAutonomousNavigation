@@ -8,5 +8,6 @@ setup(
     license="MIT",
     packages=["ue5osc"],
     install_requires=["python-osc"],
+    # TODO: does zip_safe do anything?
     zip_safe=False,
 )
