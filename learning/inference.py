@@ -105,6 +105,7 @@ def main():
         print("Saving images to", output_dir)
         ue.reset()
 
+        previous_action = ""
         for action_step in range(args.max_actions):
             # Save image
             image_filename = f"{output_dir}/{action_step:04}.png"
@@ -115,10 +116,20 @@ def main():
             action_to_take, action_index, action_probs = model.predict(image_filename)
             action_prob = action_probs[action_index]
 
+            # Prevent cycling actions (e.g., left followed by right)
+            if action_to_take == "left" and previous_action == "right":
+                action_prob = action_probs.argsort()[1]
+                action_to_take = model.dls.vocab[action_probs.argsort()[1]]
+            elif action_to_take == "right" and previous_action == "left":
+                action_prob = action_probs.argsort()[1]
+                action_to_take = model.dls.vocab[action_probs.argsort()[1]]
+            
+            # set previous_action
+            previous_action = action_to_take
+
             print(f"Moving {action_to_take} with probabilities {action_prob:.2f}")
 
             # Take action
-            # TODO: prevent cycling actions (e.g., left followed by right)
             match action_to_take:
                 case "forward":
                     ue.move_forward(args.movement_amount)
@@ -128,7 +139,7 @@ def main():
                     ue.rotate_right(args.rotation_amount)
                 case _:
                     raise ValueError(f"Unknown action: {action_to_take}")
-
+                
 
 if __name__ == "__main__":
     main()
