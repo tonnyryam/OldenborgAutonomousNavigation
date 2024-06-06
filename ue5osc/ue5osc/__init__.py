@@ -141,3 +141,4 @@ class Communicator:
         # aspect ratio
         self.set_resolution("244x244")
         sleep(1)
+
