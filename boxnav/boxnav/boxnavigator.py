@@ -20,6 +20,7 @@ class Action(Enum):
         return self.name
 
 
+# TODO: maybe use https://docs.python.org/3/library/abc.html
 class BoxNavigatorBase:
     """Base class for box navigators.
 
@@ -324,6 +325,7 @@ class WanderingNavigator(BoxNavigatorBase):
             forward_increment,
             rotation_increment,
         )
+
         self.possible_actions = [
             Action.FORWARD,
             Action.ROTATE_LEFT,

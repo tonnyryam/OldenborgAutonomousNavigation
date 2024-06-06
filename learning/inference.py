@@ -10,6 +10,9 @@ from fastai.callback.wandb import WandbCallback
 from fastai.vision.learner import load_learner
 from utils import y_from_filename  # noqa: F401 (needed for fastai load_learner)
 
+from boxnav.box import Pt
+from boxnav.boxenv import BoxEnv
+from boxnav.environments import oldenborg_boxes as boxes
 from ue5osc import Communicator
 
 
@@ -100,6 +103,23 @@ def main():
         print("Output directory is not empty. Aborting.")
         return
 
+    box_env = BoxEnv(boxes)
+
+    # TODO: for Kellie
+    # I like your idea of creating a new navigator that uses the fastai model
+    # Can you use navigator.stuck?
+    # Can use this to check for out of bounds
+    temp_pt = Pt(0, 0)
+    box_env.get_boxes_enclosing_point(temp_pt)
+
+    # agent = InferenceNavigator_fastai()
+    # initial_position,
+    # initial_rotation,
+    # box_env,
+    # args.distance_threshold,
+    # args.movement_increment,
+    # args.rotation_increment,
+
     with Communicator("127.0.0.1", ue_port=7447, py_port=7001) as ue:
         print("Connected to", ue.get_project_name())
         print("Saving images to", output_dir)
@@ -123,7 +143,7 @@ def main():
             elif action_to_take == "right" and previous_action == "left":
                 action_prob = action_probs.argsort()[1]
                 action_to_take = model.dls.vocab[action_probs.argsort()[1]]
-            
+
             # set previous_action
             previous_action = action_to_take
 
@@ -139,7 +159,7 @@ def main():
                     ue.rotate_right(args.rotation_amount)
                 case _:
                     raise ValueError(f"Unknown action: {action_to_take}")
-                
+
 
 if __name__ == "__main__":
     main()
