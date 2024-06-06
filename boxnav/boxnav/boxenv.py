@@ -31,6 +31,14 @@ class BoxEnv:
         """Returns a list of the boxes enclosing the given point."""
         return [box for box in self.boxes if box.point_is_inside(pt)]
 
+    def get_percent_through_env(self, pt: Pt) -> float:
+        # TODO: for Tommy
+        # Maybe also pass in the current box from navigator? (I like this more as of now)
+        # index = self.boxes.index(self.get_boxes_enclosing_point(pt)[0])
+        # index = self.boxes.index(current_box)
+        # Or maybe the index of the current box?
+        raise NotImplementedError
+
     def display(self, ax: Axes) -> None:
         """Draw all boxes to the given axis."""
         for box in self.boxes:
