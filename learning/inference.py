@@ -66,16 +66,12 @@ targets = [
 (-825, 2485),
 (150, 2485),
 ]
-distance_between_targets = [
-    710,
-    940,
-    470,
-    3745,
-    2250,
-    1080,
-    4335,
-    975,
-]
+def dist(a: tuple[int, int], b: tuple[int, int]) -> float:
+    dx = a[0] - b[0]
+    dy = a[1] - b[1]
+    return sqrt(dx*dx + dy*dy)
+
+distance_between_targets = [dist(a, b) for a, b in zip(targets, targets[1:])]
 
 
 def reach_target(num_hit, coords):
