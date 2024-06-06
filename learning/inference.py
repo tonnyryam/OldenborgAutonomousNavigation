@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 from contextlib import contextmanager
 from pathlib import Path
 from time import sleep
+import math
 
 import wandb
 from fastai.callback.wandb import WandbCallback
@@ -53,6 +54,44 @@ def parse_args():
         help="Maximum number of actions to take.",
     )
     return arg_parser.parse_args()
+
+
+targets = [
+    # 710 between start and 1st target
+    [4940, 870],
+    # 940 between 1st and 2nd
+    [4000, 870],
+    # 470
+    [4000, 400],
+    # 3745
+    [255, 400],
+    # 2250
+    [255, -1850],
+    # 1080
+    [-825, -1850],
+    # 4335
+    [-825, 2485],
+    # 975
+    [150, 2485],
+    # 14,515 total distance for perfect path
+]
+distance_between_targets = [
+    710,
+    940,
+    470,
+    3745,
+    2250,
+    1080,
+    4335,
+    975,
+]
+
+
+def reach_target(num_hit, coords):
+    if coords[0] in range(
+        targets[num_hit][0] - 20, targets[num_hit][0] + 20
+    ) and coords[1] in range(targets[num_hit][1] - 20, targets[num_hit][1] + 20):
+        return True
 
 
 def main():
@@ -105,6 +144,9 @@ def main():
         print("Connected to", ue.get_project_name())
         print("Saving images to", output_dir)
 
+        targets_reached = 0
+        distance = 0
+
         for action_step in range(args.max_actions):
             # Save image
             image_filename = f"{output_dir}/{action_step:04}.png"
@@ -128,6 +170,29 @@ def main():
                     ue.rotate_right(args.rotation_amount)
                 case _:
                     raise ValueError(f"Unknown action: {action_to_take}")
+
+            # progress through environment
+
+            (x, y, z) = ue.get_location()
+
+            x_coord = x
+            y_coord = y
+
+            distance = distance_between_targets[targets_reached] - (
+                math.sqrt(
+                    (round(x_coord - targets[targets_reached][0]) ** 2)
+                    + (round(y_coord - targets[targets_reached][1]) ** 2)
+                )
+            )
+
+            if reach_target(targets_reached, (x, y)):
+                targets_reached += 1
+                distance = 0
+                for i in range(targets_reached):
+                    distance += distance_between_targets[i - 1]
+                print("Agent has reached target " + str(targets_reached) + "!")
+
+            print("Progress is at " + str((distance / 14515) * 100) + "%!")
 
 
 if __name__ == "__main__":
