@@ -127,6 +127,7 @@ class Box:
         )
 
 
+# TODO: this is clearly unused, maybe delete
 def compute_angle_between_points(A: Pt, B: Pt) -> float:
     """Compute the angle between two points."""
     return
