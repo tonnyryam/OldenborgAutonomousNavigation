@@ -77,7 +77,7 @@ def dist(a: tuple[int, int], b: tuple[int, int]) -> float:
 
 # 710 is the distance between where agent starts and first target
 # didn't add coordinates for starting point in targets since it isn't a target
-distance_between_targets = [710, (dist(a, b) for a, b in zip(targets, targets[1:]))]
+distance_between_targets = [710] + [dist(a, b) for a, b in zip(targets, targets[1:])]
 
 
 # TODO: use boxenv.py for this functionality
