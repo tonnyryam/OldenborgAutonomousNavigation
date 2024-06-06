@@ -22,6 +22,7 @@ Then to kick off the simulation you must first ensure the following steps are fo
     conda create --name ENVIRONMENT
     conda activate ENVIRONMENT
     conda install python matplotlib celluloid
+    python -m pip install --editable .
     cd ue5osc
     python -m pip install --editable .
     ~~~
