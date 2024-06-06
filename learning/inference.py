@@ -124,7 +124,9 @@ def main():
                 action_prob = action_probs.argsort()[1]
                 action_to_take = model.dls.vocab[action_probs.argsort()[1]]
             
-            
+            # set previous_action
+            previous_action = action_to_take
+
             print(f"Moving {action_to_take} with probabilities {action_prob:.2f}")
 
             # Take action
@@ -137,10 +139,7 @@ def main():
                     ue.rotate_right(args.rotation_amount)
                 case _:
                     raise ValueError(f"Unknown action: {action_to_take}")
-            
-            # set previous_action
-            previous_action = action_to_take
-
+                
 
 if __name__ == "__main__":
     main()
