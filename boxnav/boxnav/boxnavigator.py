@@ -255,13 +255,13 @@ class BoxNavigator:
             if self.image_directory:
                 # Generate the next filename - Negative because unreal using a left-hand coordinate system
                 angle = f"{-self.signed_angle_to_target:+.2f}".replace(".", "p")
-                image_filepath = (
+                self.latest_image_filepath = (
                     f"{self.image_directory}/"
                     f"{self.trial_num:03}_{self.images_saved:06}_{angle}.{str(self.image_extension).lower()}"
                 )
 
                 sleep(0.25)
-                self.ue.save_image(image_filepath)
+                self.ue.save_image(self.latest_image_filepath)
                 sleep(0.25)
 
                 self.images_saved += 1
