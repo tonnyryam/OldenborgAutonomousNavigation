@@ -1,8 +1,8 @@
-from argparse import ArgumentParser, BooleanOptionalAction, Namespace
-from math import radians
+from argparse import ArgumentParser, Namespace
+from math import inf, radians
 from pathlib import Path
 
-from tqdm import tqdm
+import enlighten
 
 from boxnav.box import Pt
 from boxnav.boxenv import BoxEnv
@@ -12,7 +12,6 @@ from boxnav.environments import oldenborg_boxes as boxes
 
 def check_path(directory: str) -> None:
     path = Path(directory)
-    # Create directory if it doesn't exist
     path.mkdir(parents=True, exist_ok=True)
 
     # Check if directory is empty
@@ -49,50 +48,33 @@ def simulate(args: Namespace) -> None:
         args.quality,
         args.save_images,
         args.image_ext,
+        args.randomize_interval,
     )
 
-    """
-    # TODO: for AJC to try out later
-    import enlighten
-
     manager = enlighten.get_manager()
-    trial_bar = manager.counter(total=32, desc="Trial")
+    progress_bar = manager.counter(total=args.max_total_actions, desc="Actions")
 
-    for trial in range(32):
-        step_bar = manager.counter(total=128, desc="Step", leave=False)
-        for step in range(128):
-            time.sleep(0.01)
-            step_bar.update()
-        step_bar.close()
-        print("Trial happened")
-        trial_bar.update()
-
-    manager.stop()
-    """
-
-    for _ in tqdm(range(args.max_total_actions), desc="Actions taken"):
+    for _ in range(args.max_total_actions):
         if agent.is_stuck() or agent.at_final_target():
-            # num_actions = agent.num_actions_taken()
-            # if agent.at_final_target():
-            #     print(f"Agent reached final target in {num_actions} actions.")
-            # else:
-            #     print(f"Agent was unable to reach final target within {num_actions} actions.")
-            agent.reset()
+            num_actions = agent.num_actions_executed
+
+            if agent.at_final_target():
+                print(f"Agent reached final target in {num_actions} actions.")
+            else:
+                print(f"Agent was stuck after {num_actions} actions.")
+
             if args.stop_after_one_trial:
                 break
 
-        _ = agent.execute_next_action()
+            agent.reset()
 
-        # if args.ue:
-        #     # TODO: turn "20" into a command line argument
-        #     if agent.num_actions_taken() % 20 == 0 and args.randomize:
-        #         random_surface = random.choice(list(TexturedSurface))
-        #         agent.ue.set_texture(random_surface, randrange(42))
+        _ = agent.execute_next_action()
+        progress_bar.update()
 
     if args.ue:
         agent.ue.close_osc()
 
-    print("Simulation complete.", end=" ")
+    print("Simulation complete.")
 
     if args.anim_ext:
         output_filename = None
@@ -100,8 +82,15 @@ def simulate(args: Namespace) -> None:
         while not output_filename or Path(output_filename).exists():
             output_filename = f"output_{num}.{args.anim_ext}"
             num += 1
-        agent.save_animation(output_filename)
-        print(f"Animation saved to {output_filename}.")
+
+        total_actions = args.max_total_actions
+        if args.stop_after_one_trial:
+            total_actions = agent.num_actions_executed
+
+        progress_bar = manager.counter(total=total_actions, desc="Frames")
+        print(f"Saving animation to {output_filename}...", end=" ", flush=True)
+        agent.save_animation(output_filename, lambda i, n: progress_bar.update())
+        print("done.")
 
 
 def main():
@@ -206,11 +195,10 @@ def main():
     )
 
     argparser.add_argument(
-        "--randomize",
-        type=bool,
-        default=False,
-        action=BooleanOptionalAction,
-        help="Randomizes the texture of the walls, floors, and ceilings.",
+        "--randomize_interval",
+        type=int,
+        default=inf,
+        help="Randomizes the texture of the walls, floors, and ceilings every N actions.",
     )
 
     args = argparser.parse_args()
@@ -221,6 +209,7 @@ def main():
     if args.save_images:
         check_path(args.save_images)
 
+    print("Starting simulation.")
     simulate(args)
 
 

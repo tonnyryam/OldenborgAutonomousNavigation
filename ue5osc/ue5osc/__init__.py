@@ -13,6 +13,9 @@ class TexturedSurface(IntEnum):
     CEILING = 2
 
 
+NUM_TEXTURES = 42
+
+
 class Communicator:
     """This handles interaction between the UE5 environment and a Python script."""
 

@@ -1,14 +1,14 @@
 from enum import Enum
 from math import cos, degrees, sin
 from pathlib import Path
-from random import choice, random
+from random import choice, random, randrange
 from typing import Callable
 
 from celluloid import Camera
 from matplotlib import pyplot as plt
 from matplotlib.patches import Arrow, Wedge
 
-from ue5osc import Communicator
+from ue5osc import NUM_TEXTURES, Communicator, TexturedSurface
 
 from .box import Pt
 from .boxenv import BoxEnv
@@ -41,7 +41,7 @@ class Navigator(Enum):
     @staticmethod
     def argparse(value: str) -> str:
         try:
-            return Navigator[value.upper()]
+            return Navigator[value.upper()]  # type: ignore
         except KeyError:
             return value
 
@@ -65,6 +65,7 @@ class BoxNavigator:
         ue_quality: int | None,
         image_directory: str | None,
         image_extension: str | None,
+        randomize_interval: int | None,
         vision_callback: Callable[[str], Action] | None = None,
     ) -> None:
         self.env = env
@@ -119,10 +120,12 @@ class BoxNavigator:
             assert ue_port, "Syncing with UE requires ue_port."
             assert ue_resolution, "Syncing with UE requires image_resolution."
             assert ue_quality, "Syncing with UE requires image_quality."
+            assert randomize_interval, "Syncing with UE requires randomize_interval."
 
             self.ue = Communicator("127.0.0.1", ue_port, py_port)
             self.ue_resolution = ue_resolution
             self.ue_quality = ue_quality
+            self.randomize_interval = randomize_interval
 
             if image_directory:
                 assert image_extension, "Saving images requires image_extension."
@@ -193,9 +196,9 @@ class BoxNavigator:
         #     ax.plot(self.anchor_1.x, self.anchor_1.y, "mx")
         #     ax.plot(self.anchor_2.x, self.anchor_2.y, "mx")
 
-    def save_animation(self, filename: str) -> None:
+    def save_animation(self, filename: str, progress_bar_callback) -> None:
         animation = self.camera.animate()
-        animation.save(filename)
+        animation.save(filename, progress_callback=progress_bar_callback)
 
     def at_final_target(self) -> bool:
         return Pt.distance(self.position, self.final_target) < self.target_threshold
@@ -242,6 +245,11 @@ class BoxNavigator:
             self.camera.snap()
 
         self.num_actions_executed += 1
+
+        if self.sync_with_ue:
+            if self.num_actions_executed % self.randomize_interval == 0:
+                random_surface = choice(list(TexturedSurface))
+                self.ue.set_texture(random_surface, randrange(NUM_TEXTURES))
 
         return action_navigator, action_correct
 
