@@ -13,8 +13,8 @@ from utils import y_from_filename  # noqa: F401 (needed for fastai load_learner)
 from boxnav.box import Pt
 from boxnav.boxenv import BoxEnv
 from boxnav.environments import oldenborg_boxes as boxes
+from boxnav.boxnavigator import Navigator 
 from ue5osc import Communicator
-
 
 @contextmanager
 def set_posix_windows():
@@ -55,6 +55,48 @@ def parse_args():
         default=10,
         help="Maximum number of actions to take.",
     )
+
+    # BoxNavigatorBase python arguments 
+    arg_parser.add_argument(
+        "--distance_threshold",
+        type=int,
+        default=75,
+        help="Determines how close the robot has to be to the target to activate the next one.",
+    )
+    
+    #TODO ask about target_direction_threshold
+        #and translation_increment 
+
+    arg_parser.add_argument(
+        "--rotation_increment",
+        type=float,
+        default=radians(10),
+        help="Determines how much to rotate by for each step.",
+    )
+
+    # BoxNavigatorBase UE arguments
+    arg_parser.add_argument(
+        "--py_port", type=int, default=7001, help="Python OSC server port."
+    )
+
+    arg_parser.add_argument(
+        "--ue_port", type=int, default=7447, help="Unreal Engine OSC server port."
+    )
+
+    arg_parser.add_argument(
+        "--resolution",
+        type=str,
+        default="244x244",
+        help="Set resolution of images as ResXxResY.",
+    )
+
+    #TODO: ask about ue_quality and image_directory (argument above is output_directory)
+
+    arg_parser.add_argument(
+        "--image_ext", type=str, default="png", help="Output format for images"
+    )
+
+
     return arg_parser.parse_args()
 
 
@@ -119,6 +161,38 @@ def main():
     # args.distance_threshold,
     # args.movement_increment,
     # args.rotation_increment,
+
+    starting_box = boxes[0]
+    initial_x = starting_box.left + starting_box.width / 2
+    initial_y = starting_box.lower + 50
+    initial_position = Pt(initial_x, initial_y)
+    initial_rotation = radians(90)
+
+    agent = BoxNavigatorBase(
+        env = box_env,
+        position = initial_position,
+        rotation = initial_rotation,
+        target_distance_threshold = args.distance_threshold,
+        # target_direction_threshold = rotation_amount,
+        # translation_increment = ,
+        rotation_increment = args.rotation_increment,
+        navigator_type = Navigator.VISION,
+        # animation_extension = ,
+        sync_with_ue = True,
+        py_port = args.py_port,
+        ue_port = args.ue_port,
+        ue_resolution = args.resolution,
+        # ue_quality = ,
+        # image_directory = args.output_dir,
+        # image_extentsion = args.image_ext.
+        # inference_func
+    )
+    
+    #TODO: move the following 
+    # Prevent agent from getting stuck and/or going out-of-bounds
+    if (agent.is_stuck or box_env.get_boxes_enclosing.length == 0):
+        return  # or break depending on where this code ends up
+    
 
     with Communicator("127.0.0.1", ue_port=7447, py_port=7001) as ue:
         print("Connected to", ue.get_project_name())
