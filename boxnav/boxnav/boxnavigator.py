@@ -10,6 +10,7 @@ from .boxenv import BoxEnv
 
 
 class Action(Enum):
+    NO_ACTION = -1
     FORWARD = 0
     BACKWARD = 1
     ROTATE_LEFT = 2
