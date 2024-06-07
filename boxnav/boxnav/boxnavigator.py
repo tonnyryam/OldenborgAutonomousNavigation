@@ -3,6 +3,7 @@ from math import cos, degrees, sin
 from pathlib import Path
 from random import choice, random, randrange
 from typing import Callable
+from time import sleep
 
 from celluloid import Camera
 from matplotlib import pyplot as plt
@@ -134,8 +135,10 @@ class BoxNavigator:
                 self.image_directory.mkdir(parents=True, exist_ok=True)
 
                 self.image_extension = image_extension
+                self.images_saved = 0
 
         self.num_resets = 0
+        self.trial_num = 0
 
         # All other member variables are initialized in reset()
         self.reset()
@@ -147,6 +150,7 @@ class BoxNavigator:
 
         self.num_actions_executed = 0
         self.num_resets += 1
+        self.trial_num += 1
 
         self.is_stuck_counter = 0
 
@@ -247,6 +251,21 @@ class BoxNavigator:
         self.num_actions_executed += 1
 
         if self.sync_with_ue:
+            # Saving image if applicable
+            if self.image_directory:
+                # Generate the next filename - Negative because unreal using a left-hand coordinate system
+                angle = f"{-self.signed_angle_to_target:+.2f}".replace(".", "p")
+                image_filepath = (
+                    f"{self.image_directory}/"
+                    f"{self.trial_num:03}_{self.images_saved:06}_{angle}.{str(self.image_extension).lower()}"
+                )
+
+                sleep(0.25)
+                self.ue.save_image(image_filepath)
+                sleep(0.25)
+
+                self.images_saved += 1
+
             if self.num_actions_executed % self.randomize_interval == 0:
                 random_surface = choice(list(TexturedSurface))
                 self.ue.set_texture(random_surface, randrange(NUM_TEXTURES))
@@ -316,14 +335,14 @@ class BoxNavigator:
         # Compute angle between heading and target
         heading_vector = Pt(cos(self.rotation), sin(self.rotation)).normalized()
         target_vector = (self.target - self.position).normalized()
-        signed_angle_to_target = Pt.angle_between(heading_vector, target_vector)
+        self.signed_angle_to_target = Pt.angle_between(heading_vector, target_vector)
 
         # Already facing correct direction
-        if abs(signed_angle_to_target) < self.target_half_wedge:
+        if abs(self.signed_angle_to_target) < self.target_half_wedge:
             action = Action.FORWARD
 
         # Need to rotate left (think of unit circle); rotation indicated by positive degrees
-        elif signed_angle_to_target > 0:
+        elif self.signed_angle_to_target > 0:
             action = Action.ROTATE_LEFT
 
         # Need to rotate right (think of unit circle); rotation indicated by negative degrees
