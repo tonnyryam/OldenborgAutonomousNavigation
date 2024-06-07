@@ -2,69 +2,42 @@ from __future__ import annotations
 
 from math import atan2, degrees, sqrt
 
-tup2 = tuple[float, float]
-
 
 def approx_equal(a: float, b: float, threshold: float = 0.0001) -> bool:
     """Compare to floats and return true if they are approximately equal."""
     return abs(a - b) < threshold
 
 
-def close_enough(A: Pt, B: Pt, threshold: float) -> bool:
-    """Determine whether Pt A is close enough to Pt B depending on the threshold value.
-
-    Args:
-        A (Pt): First Pt to compare
-        B (Pt): Second Pt to compare
-        threshold (float, optional): max distance for being "close". Defaults to 1.
-
-    Returns:
-        bool: Is Pt A close enough to Pt B given a threshold
-    """
-    # TODO: find good threshold value
-    distance = (A - B).magnitude()
-    return distance < threshold
-
-
 class Pt:
     """Defines the x and y values of a point in R^2."""
 
     def __init__(self, x: float, y: float):
-        """Create a new point with the given x and y coordinate values."""
         self.x = x
         self.y = y
 
-    def xy(self) -> tup2:
-        """Return point as a tuple."""
+    def xy(self) -> tuple[float, float]:
         return (self.x, self.y)
 
     def normalized(self) -> Pt:
-        """Normalize as a 2D vector."""
-        magnitude = self.magnitude() + 0.0000001
+        # Epsilon to avoid division by zero
+        epsilon = 1e-6
+        magnitude = self.magnitude() + epsilon
         return Pt(self.x / magnitude, self.y / magnitude)
 
     def magnitude(self) -> float:
-        """Find the magnitude as a 2D vector."""
         return sqrt(self.x * self.x + self.y * self.y)
 
-    def angle_between(self, other: Pt) -> float:
-        """Calculate radian value of the angle between two points."""
-        return atan2(Pt.determinant(self, other), Pt.scalar_product(self, other))
-
     def __mul__(self, scale: float) -> Pt:
-        """Scale this vector."""
         return Pt(self.x * scale, self.y * scale)
 
     def __sub__(self, other: Pt) -> Pt:
-        """Subtract this point from another."""
         return Pt(self.x - other.x, self.y - other.y)
 
     def __add__(self, other: Pt) -> Pt:
-        """Add this point to another."""
         return Pt(self.x + other.x, self.y + other.y)
 
     def __eq__(self, other: Pt) -> bool:
-        """Does this Pt's x and y coordinates match close to another Pt."""
+        # Check if two points are approximately equal
         return approx_equal(self.x, other.x) and approx_equal(self.y, other.y)
 
     def __str__(self) -> str:
@@ -72,31 +45,24 @@ class Pt:
 
     @classmethod
     def scalar_product(cls, A: Pt, B: Pt) -> float:
-        """Scalar product of two points."""
         return A.x * B.x + A.y * B.y
 
     @classmethod
     def determinant(cls, A: Pt, B: Pt) -> float:
-        """Determinant of two points."""
         return A.x * B.y - A.y * B.x
 
     @classmethod
     def distance(cls, A: Pt, B: Pt) -> float:
-        """Distance between two points."""
         return sqrt((A.x - B.x) ** 2 + (A.y - B.y) ** 2)
+
+    @classmethod
+    def angle_between(cls, A: Pt, B: Pt) -> float:
+        return atan2(Pt.determinant(A, B), Pt.scalar_product(A, B))
 
 
 class Box:
     def __init__(self, lower_left: Pt, upper_left: Pt, upper_right: Pt, target: Pt):
-        """Create a arbitrarily rotated box.
-
-        # TODO: descriptions are wrong, fix them
-        Args:
-            lower_left (Pt): lower left origin point
-            B (Pt): next point clockwise
-            C (Pt): next point clockwise
-            target (Pt): target location inside box
-        """
+        """Create a arbitrarily rotated box."""
         self.A = lower_left
         self.B = upper_left
         self.C = upper_right
@@ -119,7 +85,6 @@ class Box:
         self.angle_degrees = degrees(atan2(self.B.x - self.A.x, self.B.y - self.A.y))
 
     def point_is_inside(self, M: Pt) -> bool:
-        """Determine whether the point is inside of this box."""
         AM = M - self.A
         BM = M - self.B
         return (0 <= Pt.scalar_product(self.AB, AM) <= self.dotAB) and (
@@ -127,14 +92,8 @@ class Box:
         )
 
 
-# TODO: this is clearly unused, maybe delete
-def compute_angle_between_points(A: Pt, B: Pt) -> float:
-    """Compute the angle between two points."""
-    return
-
-
 def aligned_box(
-    left: float, right: float, lower: float, upper: float, target: tup2
+    left: float, right: float, lower: float, upper: float, target: tuple[float, float]
 ) -> Box:
     """Create a box aligned with the x and y axes."""
     ll = Pt(left, lower)

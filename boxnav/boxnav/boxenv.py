@@ -14,10 +14,9 @@ class BoxEnv:
     """
 
     def __init__(self, boxes: list[Box]) -> None:
-        """Create boxes to be displayed in the display environment."""
         self.boxes = boxes
 
-        # TODO: this doesn't work with rotated boxes; allow diagonal boxes
+        # TODO: plotting doesn't work with rotated boxes
         padding = 100
         min_x = min(min(b.A.x, b.B.x, b.C.x) for b in boxes)
         max_x = max(max(b.A.x, b.B.x, b.C.x) for b in boxes)
@@ -27,20 +26,7 @@ class BoxEnv:
         self.xlim = (min_x - padding, max_x + padding)
         self.ylim = (min_y - padding, max_y + padding)
 
-    def get_boxes_enclosing_point(self, pt: Pt) -> list[Box]:
-        """Returns a list of the boxes enclosing the given point."""
-        return [box for box in self.boxes if box.point_is_inside(pt)]
-
-    def get_percent_through_env(self, pt: Pt) -> float:
-        # TODO: for Tommy
-        # Maybe also pass in the current box from navigator? (I like this more as of now)
-        # index = self.boxes.index(self.get_boxes_enclosing_point(pt)[0])
-        # index = self.boxes.index(current_box)
-        # Or maybe the index of the current box?
-        raise NotImplementedError
-
     def display(self, ax: Axes) -> None:
-        """Draw all boxes to the given axis."""
         for box in self.boxes:
             ax.add_patch(
                 Rectangle(
@@ -58,3 +44,14 @@ class BoxEnv:
         ax.set_xlim(*self.xlim)
         ax.set_ylim(*self.ylim)
         ax.set_aspect("equal")
+
+    def get_boxes_enclosing_point(self, pt: Pt) -> list[Box]:
+        return [box for box in self.boxes if box.point_is_inside(pt)]
+
+    def get_percent_through_env(self, pt: Pt) -> float:
+        # TODO: for Tommy
+        # Maybe also pass in the current box from navigator? (I like this more as of now)
+        # index = self.boxes.index(self.get_boxes_enclosing_point(pt)[0])
+        # index = self.boxes.index(current_box)
+        # Or maybe the index of the current box?
+        raise NotImplementedError
