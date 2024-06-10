@@ -1,21 +1,15 @@
 import threading
-from time import sleep
 
 from pythonosc import udp_client
 from pythonosc.osc_server import BlockingOSCUDPServer
 
 from ue5osc.osc_dispatcher import OSCMessageReceiver
-from enum import IntEnum
 
 
 class TexturedSurface(IntEnum):
     FLOOR = 0
     WALL = 1
     CEILING = 2
-
-
-# creating an object to use "set_texture" for the "reset" function
-# textureObject = TexturedSurface(0)
 
 
 class Communicator:
@@ -73,6 +67,12 @@ class Communicator:
     def set_location(self, x: float, y: float, z: float) -> None:
         """Sets X, Y, and Z values of an Unreal Camera."""
         self.client.send_message("/set/location", [x, y, z])
+
+    def set_location_xy(self, x: float, y: float) -> None:
+        """Sets X and Y values of an Unreal Camera. Z is taken from Unreal."""
+        # TODO: add this functionality directly to UE
+        _, _, unreal_z = self.get_location()
+        self.set_location(x, y, unreal_z)
 
     def get_rotation(self) -> tuple[float, float, float]:
         """Returns roll, pitch, and yaw."""
@@ -141,4 +141,3 @@ class Communicator:
         # aspect ratio
         self.set_resolution("244x244")
         sleep(1)
-
