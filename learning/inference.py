@@ -13,7 +13,7 @@ from utils import y_from_filename  # noqa: F401 (needed for fastai load_learner)
 from boxnav.box import Pt
 from boxnav.boxenv import BoxEnv
 from boxnav.environments import oldenborg_boxes as boxes
-from boxnav.boxnavigator import Navigator 
+from boxnav.boxnavigator import Navigator, BoxNavigator
 from ue5osc import Communicator
 
 @contextmanager
@@ -43,12 +43,12 @@ def parse_args():
         default=120.0,
         help="Movement forward per action.",
     )
-    arg_parser.add_argument(
-        "--rotation_amount",
-        type=float,
-        default=10.0,
-        help="Rotation per action (in degrees for ue5osc).",
-    )
+    # arg_parser.add_argument(
+    #     "--rotation_amount",
+    #     type=float,
+    #     default=10.0,
+    #     help="Rotation per action (in degrees for ue5osc).",
+    # )
     arg_parser.add_argument(
         "--max_actions",
         type=int,
@@ -63,10 +63,18 @@ def parse_args():
         default=75,
         help="Determines how close the robot has to be to the target to activate the next one.",
     )
-    
-    #TODO ask about target_direction_threshold
-        #and translation_increment 
-
+    arg_parser.add_argument(
+        "--direction_threshold",
+        type=int,
+        default=radians(12),
+        help="Determines how close the robot has to be to the target to activate the next one.",
+    )
+    arg_parser.add_argument(
+        "--translation_increment",
+        type=float,
+        default=120.0,
+        help="Determines how far to move forward each step.",
+    )
     arg_parser.add_argument(
         "--rotation_increment",
         type=float,
@@ -76,26 +84,36 @@ def parse_args():
 
     # BoxNavigatorBase UE arguments
     arg_parser.add_argument(
+        "--ue", action="store_true", help="Connect and send command to Unreal Engine."
+    )
+    arg_parser.add_argument(
         "--py_port", type=int, default=7001, help="Python OSC server port."
     )
-
     arg_parser.add_argument(
         "--ue_port", type=int, default=7447, help="Unreal Engine OSC server port."
     )
-
     arg_parser.add_argument(
         "--resolution",
         type=str,
         default="244x244",
         help="Set resolution of images as ResXxResY.",
     )
-
-    #TODO: ask about ue_quality and image_directory (argument above is output_directory)
-
+    # TODO: add a check for valid quality values
+    arg_parser.add_argument(
+        "--quality",
+        type=str,
+        default="1",
+        help="Set quality of images in the range 1 to 4.",
+    )
     arg_parser.add_argument(
         "--image_ext", type=str, default="png", help="Output format for images"
     )
-
+    arg_parser.add_argument(
+        "--randomize_interval",
+        type=int,
+        default=inf,
+        help="Randomizes the texture of the walls, floors, and ceilings every N actions.",
+    )
 
     return arg_parser.parse_args()
 
@@ -151,16 +169,8 @@ def main():
     # I like your idea of creating a new navigator that uses the fastai model
     # Can you use navigator.stuck?
     # Can use this to check for out of bounds
-    temp_pt = Pt(0, 0)
-    box_env.get_boxes_enclosing_point(temp_pt)
-
-    # agent = InferenceNavigator_fastai()
-    # initial_position,
-    # initial_rotation,
-    # box_env,
-    # args.distance_threshold,
-    # args.movement_increment,
-    # args.rotation_increment,
+        # temp_pt = Pt(0, 0)
+        # box_env.get_boxes_enclosing_point(temp_pt)
 
     starting_box = boxes[0]
     initial_x = starting_box.left + starting_box.width / 2
@@ -168,24 +178,24 @@ def main():
     initial_position = Pt(initial_x, initial_y)
     initial_rotation = radians(90)
 
-    agent = BoxNavigatorBase(
-        env = box_env,
-        position = initial_position,
-        rotation = initial_rotation,
-        target_distance_threshold = args.distance_threshold,
-        # target_direction_threshold = rotation_amount,
-        # translation_increment = ,
-        rotation_increment = args.rotation_increment,
-        navigator_type = Navigator.VISION,
-        # animation_extension = ,
-        sync_with_ue = True,
-        py_port = args.py_port,
-        ue_port = args.ue_port,
-        ue_resolution = args.resolution,
-        # ue_quality = ,
-        # image_directory = args.output_dir,
-        # image_extentsion = args.image_ext.
-        # inference_func
+    agent = BoxNavigator(
+        box_env,
+        initial_position,
+        initial_rotation,
+        args.distance_threshold,
+        args.direction_threshold,
+        args.translation_increment,
+        args.rotation_increment,
+        Navigator.VISION,
+        args.ue,
+        args.py_port,
+        args.ue_port,
+        args.resolution,
+        args.quality,
+        args.output_dir,
+        args.image_ext,
+        args.randomize_interval,
+        # vision_callback
     )
     
     #TODO: move the following 
@@ -194,6 +204,8 @@ def main():
         return  # or break depending on where this code ends up
     
 
+    import sys
+    sys.exit()
     with Communicator("127.0.0.1", ue_port=7447, py_port=7001) as ue:
         print("Connected to", ue.get_project_name())
         print("Saving images to", output_dir)
