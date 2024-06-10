@@ -287,7 +287,7 @@ class BoxNavigator:
 
         except TimeoutError:
             self.ue.close_osc()
-            print("Could not sync position with UE.")
+            print("Could not sync rotation with UE.")
             raise SystemExit
 
     def __action_move(self, sign: int) -> Action:
