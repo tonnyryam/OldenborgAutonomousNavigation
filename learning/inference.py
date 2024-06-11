@@ -4,6 +4,7 @@ from argparse import ArgumentParser
 from contextlib import contextmanager
 from pathlib import Path
 from time import sleep
+from math import inf, radians
 
 import wandb
 from fastai.callback.wandb import WandbCallback
@@ -13,8 +14,11 @@ from utils import y_from_filename  # noqa: F401 (needed for fastai load_learner)
 from boxnav.box import Pt
 from boxnav.boxenv import BoxEnv
 from boxnav.environments import oldenborg_boxes as boxes
-from boxnav.boxnavigator import Navigator, BoxNavigator
+from boxnav.boxnavigator import Navigator, BoxNavigator, Action
 from ue5osc import Communicator
+
+from functools import partial
+
 
 @contextmanager
 def set_posix_windows():
@@ -27,6 +31,35 @@ def set_posix_windows():
         pathlib.PosixPath = posix_backup
 
 
+def check_path(directory: str) -> None:
+    path = Path(directory)
+    path.mkdir(parents=True, exist_ok=True)
+
+    # Check if directory is empty
+    if len(list(Path(path).iterdir())) != 0:
+        raise ValueError(f"Directory {path} is not empty.")
+
+
+def inference_func(model, image_file):
+    # Predict correct action
+    action_to_take, action_index, action_probs = model.predict(image_file)
+    # action_prob = action_probs[action_index]
+
+    # Translate fast.ai action to an Action object
+    take_action = Action.NO_ACTION
+    match action_to_take:
+        case "forward":
+            take_action = Action.FORWARD
+        case "left":
+            take_action = Action.ROTATE_LEFT
+        case "right":
+            take_action = Action.ROTATE_RIGHT
+        case _:
+            raise ValueError(f"Unknown action: {action_to_take}")
+
+    return take_action
+
+
 def parse_args():
     arg_parser = ArgumentParser("Track performance of trained networks.")
 
@@ -37,6 +70,10 @@ def parse_args():
     arg_parser.add_argument("wandb_model", help="Path to the model to evaluate.")
 
     arg_parser.add_argument("output_dir", help="Directory to store saved images.")
+
+    #
+    # Optional arguments
+    #
     arg_parser.add_argument(
         "--movement_amount",
         type=float,
@@ -56,7 +93,7 @@ def parse_args():
         help="Maximum number of actions to take.",
     )
 
-    # BoxNavigatorBase python arguments 
+    # BoxNavigator python arguments
     arg_parser.add_argument(
         "--distance_threshold",
         type=int,
@@ -81,6 +118,8 @@ def parse_args():
         default=radians(10),
         help="Determines how much to rotate by for each step.",
     )
+
+    arg_parser.add_argument("--anim_ext", type=str, help="Output format for animation.")
 
     # BoxNavigatorBase UE arguments
     arg_parser.add_argument(
@@ -114,6 +153,12 @@ def parse_args():
         default=inf,
         help="Randomizes the texture of the walls, floors, and ceilings every N actions.",
     )
+
+    if arg_parser.parse_args().output_dir:
+        arg_parser.parse_args().ue = True
+
+    if arg_parser.parse_args().output_dir:
+        check_path(arg_parser.parse_args().output_dir)
 
     return arg_parser.parse_args()
 
@@ -163,14 +208,16 @@ def main():
         print("Output directory is not empty. Aborting.")
         return
 
+    print("Starting inference.")
+
     box_env = BoxEnv(boxes)
 
     # TODO: for Kellie
     # I like your idea of creating a new navigator that uses the fastai model
     # Can you use navigator.stuck?
     # Can use this to check for out of bounds
-        # temp_pt = Pt(0, 0)
-        # box_env.get_boxes_enclosing_point(temp_pt)
+    # temp_pt = Pt(0, 0)
+    # box_env.get_boxes_enclosing_point(temp_pt)
 
     starting_box = boxes[0]
     initial_x = starting_box.left + starting_box.width / 2
@@ -187,6 +234,7 @@ def main():
         args.translation_increment,
         args.rotation_increment,
         Navigator.VISION,
+        None,
         args.ue,
         args.py_port,
         args.ue_port,
@@ -195,56 +243,64 @@ def main():
         args.output_dir,
         args.image_ext,
         args.randomize_interval,
-        # vision_callback
+        vision_callback=partial(inference_func, model),
     )
-    
-    #TODO: move the following 
-    # Prevent agent from getting stuck and/or going out-of-bounds
-    if (agent.is_stuck or box_env.get_boxes_enclosing.length == 0):
-        return  # or break depending on where this code ends up
-    
 
-    import sys
-    sys.exit()
-    with Communicator("127.0.0.1", ue_port=7447, py_port=7001) as ue:
-        print("Connected to", ue.get_project_name())
-        print("Saving images to", output_dir)
-        ue.reset()
+    for _ in range(args.max_actions):
+        _ = agent.execute_next_action()
 
-        previous_action = ""
-        for action_step in range(args.max_actions):
-            # Save image
-            image_filename = f"{output_dir}/{action_step:04}.png"
-            ue.save_image(image_filename)
-            sleep(0.5)
+        # Prevent agent from getting stuck and/or going out-of-bounds
+        if agent.is_stuck():
+            print("Agent is stuck.")
+            break
+        elif len(box_env.get_boxes_enclosing_point(agent.position)) == 0:
+            print("Agent is out of bounds.")
+            break
 
-            # Predict correct action
-            action_to_take, action_index, action_probs = model.predict(image_filename)
-            action_prob = action_probs[action_index]
+    if args.ue:
+        agent.ue.close_osc()
 
-            # Prevent cycling actions (e.g., left followed by right)
-            if action_to_take == "left" and previous_action == "right":
-                action_prob = action_probs.argsort()[1]
-                action_to_take = model.dls.vocab[action_probs.argsort()[1]]
-            elif action_to_take == "right" and previous_action == "left":
-                action_prob = action_probs.argsort()[1]
-                action_to_take = model.dls.vocab[action_probs.argsort()[1]]
+    print("Simulation complete.")
 
-            # set previous_action
-            previous_action = action_to_take
+    # with Communicator("127.0.0.1", ue_port=7447, py_port=7001) as ue:
+    #     print("Connected to", ue.get_project_name())
+    #     print("Saving images to", output_dir)
+    #     ue.reset()
 
-            print(f"Moving {action_to_take} with probabilities {action_prob:.2f}")
+    #     previous_action = ""
+    #     for action_step in range(args.max_actions):
+    #         # Save image
+    #         image_filename = f"{output_dir}/{action_step:04}.png"
+    #         ue.save_image(image_filename)
+    #         sleep(0.5)
 
-            # Take action
-            match action_to_take:
-                case "forward":
-                    ue.move_forward(args.movement_amount)
-                case "left":
-                    ue.rotate_left(args.rotation_amount)
-                case "right":
-                    ue.rotate_right(args.rotation_amount)
-                case _:
-                    raise ValueError(f"Unknown action: {action_to_take}")
+    #         # Predict correct action
+    #         action_to_take, action_index, action_probs = model.predict(image_filename)
+    #         action_prob = action_probs[action_index]
+
+    #         # Prevent cycling actions (e.g., left followed by right)
+    #         if action_to_take == "left" and previous_action == "right":
+    #             action_prob = action_probs.argsort()[1]
+    #             action_to_take = model.dls.vocab[action_probs.argsort()[1]]
+    #         elif action_to_take == "right" and previous_action == "left":
+    #             action_prob = action_probs.argsort()[1]
+    #             action_to_take = model.dls.vocab[action_probs.argsort()[1]]
+
+    #         # set previous_action
+    #         previous_action = action_to_take
+
+    #         print(f"Moving {action_to_take} with probabilities {action_prob:.2f}")
+
+    #         # Take action
+    #         match action_to_take:
+    #             case "forward":
+    #                 ue.move_forward(args.movement_amount)
+    #             case "left":
+    #                 ue.rotate_left(args.rotation_amount)
+    #             case "right":
+    #                 ue.rotate_right(args.rotation_amount)
+    #             case _:
+    #                 raise ValueError(f"Unknown action: {action_to_take}")
 
 
 if __name__ == "__main__":
