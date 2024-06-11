@@ -316,7 +316,10 @@ class BoxNavigator:
 
     def __sync_ue_rotation(self) -> None:
         try:
-            self.ue.set_yaw(self.rotation)
+            # Conversion from Box to unreal location is (180 - boxYaw) = unrealYaw
+            unreal_yaw: float = degrees(180 - self.rotation)
+            self.ue.set_yaw(unreal_yaw)
+            # self.ue.set_yaw(self.rotation)
 
         except TimeoutError:
             self.ue.close_osc()
