@@ -232,7 +232,6 @@ class BoxNavigator:
                     f"{self.image_directory}/"
                     f"{self.trial_num:03}_{self.images_saved:06}_{angle}.{str(self.image_extension).lower()}"
                 )
-                print("Inside BoxNavigator: ", self.latest_image_filepath)
 
                 sleep(0.25)
                 self.ue.save_image(self.latest_image_filepath)
@@ -240,7 +239,11 @@ class BoxNavigator:
 
                 self.images_saved += 1
 
-            if self.num_actions_executed % self.randomize_interval == 0:
+            if (
+                self.num_actions_executed % self.randomize_interval == 0
+                and self.num_actions_executed != 0
+            ):
+                print("enter texture if statement")
                 random_surface = choice(list(TexturedSurface))
                 self.ue.set_texture(random_surface, randrange(NUM_TEXTURES))
 
