@@ -154,12 +154,6 @@ def parse_args():
         help="Randomizes the texture of the walls, floors, and ceilings every N actions.",
     )
 
-    if arg_parser.parse_args().output_dir:
-        arg_parser.parse_args().ue = True
-
-    if arg_parser.parse_args().output_dir:
-        check_path(arg_parser.parse_args().output_dir)
-
     return arg_parser.parse_args()
 
 
@@ -207,6 +201,12 @@ def main():
     if any(output_dir.iterdir()):
         print("Output directory is not empty. Aborting.")
         return
+
+    if args.output_dir:
+        args.ue = True
+
+    if args.output_dir:
+        check_path(args.output_dir)
 
     print("Starting inference.")
 
