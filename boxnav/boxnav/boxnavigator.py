@@ -27,6 +27,13 @@ class Action(Enum):
         return self.name
 
 
+# def test_func(a: Action) -> Action:
+#     return Action.FORWARD
+
+
+# test_func("hello")
+
+
 class Navigator(Enum):
     PERFECT = 0
     WANDERING = 1
@@ -213,45 +220,11 @@ class BoxNavigator:
     def execute_next_action(self) -> tuple[Action, Action]:
         self.__update_target_if_necessary()
 
+        # Compute the correct action
         action_correct = self.__compute_action_correct()
-        action_navigator = self.__compute_action_navigator()
-
-        match action_navigator:
-            case Action.FORWARD:
-                action_executed = self.__action_move_forward()
-
-            case Action.BACKWARD:
-                action_executed = self.__action_move_backward()
-
-            case Action.ROTATE_LEFT:
-                action_executed = self.__action_rotate_left()
-
-            case Action.ROTATE_RIGHT:
-                action_executed = self.__action_rotate_right()
-
-            case Action.TELEPORT:
-                action_executed = self.__action_teleport()
-
-            case _:
-                raise NotImplementedError("Unknown action.")
-
-        # If action is forward or backward and we don't move
-        if action_executed == Action.NO_ACTION:
-            self.is_stuck_counter += 1
-        elif action_executed in [Action.FORWARD, Action.BACKWARD]:
-            self.is_stuck_counter = 0
-
-        # Update the animation
-        if self.generating_animation:
-            self.env.display(self.axis)
-            self.display()
-            self.axis.invert_xaxis()
-            self.camera.snap()
-
-        self.num_actions_executed += 1
 
         if self.sync_with_ue:
-            # Saving image if applicable
+            # Save an image if applicable (using correct action's angle to target in file name)
             if self.image_directory:
                 # Generate the next filename - Negative because unreal using a left-hand coordinate system
                 angle = f"{-self.signed_angle_to_target:+.2f}".replace(".", "p")
@@ -259,6 +232,7 @@ class BoxNavigator:
                     f"{self.image_directory}/"
                     f"{self.trial_num:03}_{self.images_saved:06}_{angle}.{str(self.image_extension).lower()}"
                 )
+                print("Inside BoxNavigator: ", self.latest_image_filepath)
 
                 sleep(0.25)
                 self.ue.save_image(self.latest_image_filepath)
@@ -270,7 +244,66 @@ class BoxNavigator:
                 random_surface = choice(list(TexturedSurface))
                 self.ue.set_texture(random_surface, randrange(NUM_TEXTURES))
 
+        # Loop until we have executed an action or til stuck a certain number of times
+        executed_action = False
+        while not executed_action:
+            # If stuck enough times, early return no action
+            if self.is_stuck_counter >= self.is_stuck_threshold:
+                return Action.NO_ACTION, action_correct
+
+            else:
+                # Compute the navigator action
+                action_navigator = self.__compute_action_navigator()
+
+                # Check if navigator action is possible
+                if action_navigator in [Action.FORWARD, Action.BACKWARD]:
+                    if not self.__move_is_possible(action_navigator):
+                        self.is_stuck_counter += 1
+                        continue
+                    else:
+                        self.is_stuck_counter = 0
+
+                match action_navigator:
+                    case Action.FORWARD:
+                        self.__action_translate(action_navigator)
+
+                    case Action.BACKWARD:
+                        self.__action_translate(action_navigator)
+
+                    case Action.ROTATE_LEFT:
+                        self.__action_rotate(action_navigator)
+
+                    case Action.ROTATE_RIGHT:
+                        self.__action_rotate(action_navigator)
+
+                    case Action.TELEPORT:
+                        self.__action_teleport()
+
+                    case _:
+                        raise NotImplementedError("Unknown action.")
+
+                # Update the animation
+                # TODO: Also call this code in the constructor(?)
+                if self.generating_animation:
+                    self.env.display(self.axis)
+                    self.display()
+                    self.axis.invert_xaxis()
+                    self.camera.snap()
+
+                self.num_actions_executed += 1
+                executed_action = True
+
         return action_navigator, action_correct
+
+    def __move_is_possible(self, direction: Action) -> bool:
+        sign = -1 if direction == Action.BACKWARD else 1
+
+        new_x = self.position.x + sign * self.translation_increment * cos(self.rotation)
+        new_y = self.position.y + sign * self.translation_increment * sin(self.rotation)
+        possible_new_position = Pt(new_x, new_y)
+
+        # TODO: checks all boxes (can probably make more efficient)
+        return len(self.env.get_boxes_enclosing_point(possible_new_position)) > 0
 
     def __sync_ue_position(self) -> None:
         try:
