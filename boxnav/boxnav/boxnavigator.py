@@ -290,44 +290,24 @@ class BoxNavigator:
             print("Could not sync rotation with UE.")
             raise SystemExit
 
-    def __action_move(self, sign: int) -> Action:
+    def __action_translate(self, direction: Action) -> None:
+        sign = -1 if direction == Action.BACKWARD else 1
+
         new_x = self.position.x + sign * self.translation_increment * cos(self.rotation)
         new_y = self.position.y + sign * self.translation_increment * sin(self.rotation)
         possible_new_position = Pt(new_x, new_y)
 
-        # TODO: checks all boxes (can probably make more efficient)
-        if self.env.get_boxes_enclosing_point(possible_new_position):
-            self.position = possible_new_position
+        self.position = possible_new_position
 
-            if self.sync_with_ue:
-                self.__sync_ue_position()
+        if self.sync_with_ue:
+            self.__sync_ue_position()
 
-            return Action.FORWARD if sign > 0 else Action.BACKWARD
-
-        else:
-            return Action.NO_ACTION
-
-    def __action_move_forward(self) -> Action:
-        return self.__action_move(+1)
-
-    def __action_move_backward(self) -> Action:
-        return self.__action_move(-1)
-
-    def __action_rotate_left(self) -> Action:
-        self.rotation += self.rotation_increment
+    def __action_rotate(self, direction: Action) -> None:
+        sign = -1 if direction == Action.ROTATE_RIGHT else 1
+        self.rotation += sign * self.rotation_increment
 
         if self.sync_with_ue:
             self.__sync_ue_rotation()
-
-        return Action.ROTATE_LEFT
-
-    def __action_rotate_right(self) -> Action:
-        self.rotation -= self.rotation_increment
-
-        if self.sync_with_ue:
-            self.__sync_ue_rotation()
-
-        return Action.ROTATE_RIGHT
 
     def __action_teleport(self) -> Action: ...
 
