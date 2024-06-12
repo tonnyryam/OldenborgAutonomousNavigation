@@ -1,10 +1,11 @@
 import threading
-from enum import IntEnum
 
 from pythonosc import udp_client
 from pythonosc.osc_server import BlockingOSCUDPServer
 
 from ue5osc.osc_dispatcher import OSCMessageReceiver
+from enum import IntEnum
+from time import sleep
 
 
 class TexturedSurface(IntEnum):
@@ -137,3 +138,11 @@ class Communicator:
         """Reset agent to the start location using a UE Blueprint command."""
         # The python OSC library send_message method always requires a value
         self.client.send_message("/reset", 0.0)
+        # TODO: add reasonable deafults
+        # quality
+        # self.set_quality(4)
+        # textures
+        # self.set_texture(textureObject, 0.0)
+        # aspect ratio
+        # self.set_resolution("244x244")
+        # sleep(1)
