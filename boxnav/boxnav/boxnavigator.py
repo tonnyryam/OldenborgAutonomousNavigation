@@ -248,54 +248,54 @@ class BoxNavigator:
                 self.ue.set_texture(random_surface, randrange(NUM_TEXTURES))
 
         # Loop until we have executed an action or til stuck a certain number of times
-        executed_action = False
-        while not executed_action:
+        while True:
             # If stuck enough times, early return no action
             if self.is_stuck_counter >= self.is_stuck_threshold:
                 return Action.NO_ACTION, action_correct
 
+            # Compute the navigator action
+            action_navigator = self.__compute_action_navigator()
+
+            # Check if navigator action is possible
+            if action_navigator in [Action.FORWARD, Action.BACKWARD]:
+                if self.__move_is_possible(action_navigator):
+                    self.is_stuck_counter = 0
+                    break
+                else:
+                    self.is_stuck_counter += 1
             else:
-                # Compute the navigator action
-                action_navigator = self.__compute_action_navigator()
+                break
 
-                # Check if navigator action is possible
-                if action_navigator in [Action.FORWARD, Action.BACKWARD]:
-                    if not self.__move_is_possible(action_navigator):
-                        self.is_stuck_counter += 1
-                        continue
-                    else:
-                        self.is_stuck_counter = 0
+        match action_navigator:
+            case Action.FORWARD:
+                self.__action_translate(action_navigator)
 
-                match action_navigator:
-                    case Action.FORWARD:
-                        self.__action_translate(action_navigator)
+            case Action.BACKWARD:
+                self.__action_translate(action_navigator)
 
-                    case Action.BACKWARD:
-                        self.__action_translate(action_navigator)
+            case Action.ROTATE_LEFT:
+                self.__action_rotate(action_navigator)
 
-                    case Action.ROTATE_LEFT:
-                        self.__action_rotate(action_navigator)
+            case Action.ROTATE_RIGHT:
+                self.__action_rotate(action_navigator)
 
-                    case Action.ROTATE_RIGHT:
-                        self.__action_rotate(action_navigator)
+            case Action.TELEPORT:
+                self.__action_teleport()
 
-                    case Action.TELEPORT:
-                        self.__action_teleport()
+            case _:
+                raise NotImplementedError("Unknown action.")
 
-                    case _:
-                        raise NotImplementedError("Unknown action.")
+        self.num_actions_executed += 1
 
-                # Update the animation
-                # TODO: Also call this code in the constructor(?)
-                if self.generating_animation:
-                    self.env.display(self.axis)
-                    self.display()
-                    self.axis.invert_xaxis()
-                    self.camera.snap()
+        # Update the animation
+        # TODO: Also call this code in the constructor(?)
+        if self.generating_animation:
+            self.env.display(self.axis)
+            self.display()
+            self.axis.invert_xaxis()
+            self.camera.snap()
 
-                self.num_actions_executed += 1
-                executed_action = True
-
+        self.previous_action = action_navigator
         return action_navigator, action_correct
 
     def __move_is_possible(self, direction: Action) -> bool:
