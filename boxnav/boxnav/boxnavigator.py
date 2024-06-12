@@ -310,7 +310,19 @@ class BoxNavigator:
 
     def __sync_ue_position(self) -> None:
         try:
-            self.ue.set_location_xy(self.position.x, self.position.y)
+            # self.ue.set_location_xy(self.position.x, self.position.y)
+
+            # NOTE: the following moves the UE agent to match the navigator/python
+            # there exists code to sync box position to unreal
+            # (in boxunreal called sync_box_position_to_unreal)
+
+            # Get z position from UE
+            _, _, unreal_z = self.ue.get_location()
+
+            # Get x, y position from boxsim
+            x, y = self.position.xy()
+
+            self.ue.set_location(x, y, unreal_z)
 
         except TimeoutError:
             self.ue.close_osc()
