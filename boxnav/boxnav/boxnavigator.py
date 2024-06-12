@@ -70,6 +70,16 @@ class BoxNavigator:
     ) -> None:
         self.env = env
         self.initial_position = position
+        self.env_distances = [
+            Pt.distance(self.initial_position, self.env.boxes[0].target)
+        ]
+        for i in range(len(self.env.boxes) - 1):
+            self.env_distances.append(
+                Pt.distance(
+                    self.env.boxes[i].target,
+                    self.env.boxes[i + 1].target,
+                )
+            )
         self.initial_rotation = rotation
         self.final_target = self.env.boxes[-1].target
 
@@ -371,27 +381,12 @@ class BoxNavigator:
         # Or maybe the index of the current box?
 
     def get_percent_through_env(self) -> float:
-        dist_between_targets = [
-            Pt.distance(self.initial_position, self.env.boxes[0].target)
-        ]
-
-        for i in range(len(self.env.boxes) - 1):
-            dist_between_targets.append(
-                Pt.distance(
-                    self.env.boxes[i].target,
-                    self.env.boxes[i + 1].target,
-                )
-            )
-
         last_box = self.env.get_boxes_enclosing_point(self.position)[-1]
-        progress = sum(
-            d for d in dist_between_targets[: self.env.boxes.index(last_box)]
-        )
+        progress = sum(d for d in self.env_distances[: self.env.boxes.index(last_box)])
 
-        # adds the distance it has traveled from the last target
-        progress += dist_between_targets[self.env.boxes.index(last_box)] - Pt.distance(
+        progress += self.env_distances[self.env.boxes.index(last_box)] - Pt.distance(
             self.position,
             last_box.target,
         )
 
-        return (progress / sum(dist_between_targets)) * 100
+        return (progress / sum(self.env_distances)) * 100
