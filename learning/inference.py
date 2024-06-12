@@ -75,18 +75,6 @@ def parse_args():
     # Optional arguments
     #
     arg_parser.add_argument(
-        "--movement_amount",
-        type=float,
-        default=120.0,
-        help="Movement forward per action.",
-    )
-    # arg_parser.add_argument(
-    #     "--rotation_amount",
-    #     type=float,
-    #     default=10.0,
-    #     help="Rotation per action (in degrees for ue5osc).",
-    # )
-    arg_parser.add_argument(
         "--max_actions",
         type=int,
         default=10,
@@ -110,13 +98,13 @@ def parse_args():
         "--translation_increment",
         type=float,
         default=120.0,
-        help="Determines how far to move forward each step.",
+        help="Movement forward per action.",
     )
     arg_parser.add_argument(
         "--rotation_increment",
         type=float,
-        default=radians(10),
-        help="Determines how much to rotate by for each step.",
+        default=radians(10.0),
+        help="Rotation per action (in degrees for ue5osc).",
     )
 
     arg_parser.add_argument("--anim_ext", type=str, help="Output format for animation.")
@@ -235,7 +223,7 @@ def main():
         args.rotation_increment,
         Navigator.VISION,
         None,
-        args.ue,
+        args.ue,  # False, #args.ue,
         args.py_port,
         args.ue_port,
         args.resolution,
