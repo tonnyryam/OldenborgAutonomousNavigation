@@ -4,8 +4,6 @@ from argparse import ArgumentParser
 from contextlib import contextmanager
 from pathlib import Path
 from time import sleep
-import math
-import boxenv
 
 import wandb
 from fastai.callback.wandb import WandbCallback

@@ -71,14 +71,7 @@ def simulate(args: Namespace) -> None:
 
         _ = agent.execute_next_action()
         progress_bar.update()
-        print(
-            str(
-                agent.get_percent_through_env(
-                    agent.position, agent.initial_position, boxes
-                )
-            )
-            + "%"
-        )
+        print(str(agent.get_percent_through_env()) + "%")
         sleep(0.1)
 
     if args.ue:

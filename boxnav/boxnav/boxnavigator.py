@@ -370,43 +370,28 @@ class BoxNavigator:
         # index = self.boxes.index(current_box)
         # Or maybe the index of the current box?
 
-    def get_percent_through_env(self, pt: Pt, initial_pt: Pt, boxes: list) -> float:
-        """
-        takes the current and initial location of an agent, and its current environment,
-        returns its % completion of said environment
-
-        :param: pt (class Pt) updated location of agent
-        :param: initial_pt (class Pt) starting location of agent
-        :param: boxes (list) selected environment from boxnav.envrionments
-        :return: (float) percent completion of environment
-        """
-        # "progress" is how far the agent has traveled
-        progress = 0
-        # "last_box" is the box the agent is currently in (if it's in only one)
-        # and the second box it's in (if in two)
-        last_box = self.env.get_boxes_enclosing_point(pt)[
-            len(self.env.get_boxes_enclosing_point(pt)) - 1
+    def get_percent_through_env(self) -> float:
+        dist_between_targets = [
+            Pt.distance(self.initial_position, self.env.boxes[0].target)
         ]
-        # "dist_btwn_targets" is a list of the distance between targets starting
-        # with the length from the agent's initial location to the first target
-        dist_btwn_targets = [Pt.distance(initial_pt, boxes[0].target)]
 
-        # adds to "dist_btwn_targets"
-        for i in range(len(boxes) - 1):
-            dist_btwn_targets.append(
+        for i in range(len(self.env.boxes) - 1):
+            dist_between_targets.append(
                 Pt.distance(
-                    boxes[i].target,
-                    boxes[i + 1].target,
+                    self.env.boxes[i].target,
+                    self.env.boxes[i + 1].target,
                 )
             )
 
-        # adds the distance between all the targets it has passed to "progress"
-        for i in range(boxes.index(last_box)):
-            progress += dist_btwn_targets[i]
+        last_box = self.env.get_boxes_enclosing_point(self.position)[-1]
+        progress = sum(
+            d for d in dist_between_targets[: self.env.boxes.index(last_box)]
+        )
+
         # adds the distance it has traveled from the last target
-        progress += dist_btwn_targets[boxes.index(last_box)] - Pt.distance(
-            pt,
+        progress += dist_between_targets[self.env.boxes.index(last_box)] - Pt.distance(
+            self.position,
             last_box.target,
         )
 
-        return (progress / sum(dist_btwn_targets)) * 100
+        return (progress / sum(dist_between_targets)) * 100

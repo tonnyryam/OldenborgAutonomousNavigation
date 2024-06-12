@@ -14,7 +14,7 @@ class TexturedSurface(IntEnum):
     CEILING = 2
 
 
-NUM_TEXTURES = 100
+NUM_TEXTURES = 42
 
 
 class Communicator:
@@ -144,5 +144,5 @@ class Communicator:
         # textures
         # self.set_texture(textureObject, 0.0)
         # aspect ratio
-        self.set_resolution("244x244")
-        sleep(1)
+        # self.set_resolution("244x244")
+        # sleep(1)
