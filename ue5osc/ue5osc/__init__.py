@@ -4,12 +4,17 @@ from pythonosc import udp_client
 from pythonosc.osc_server import BlockingOSCUDPServer
 
 from ue5osc.osc_dispatcher import OSCMessageReceiver
+from enum import IntEnum
+from time import sleep
 
 
 class TexturedSurface(IntEnum):
     FLOOR = 0
     WALL = 1
     CEILING = 2
+
+
+NUM_TEXTURES = 100
 
 
 class Communicator:

@@ -8,6 +8,7 @@ from boxnav.box import Pt
 from boxnav.boxenv import BoxEnv
 from boxnav.boxnavigator import BoxNavigator, Navigator
 from boxnav.environments import oldenborg_boxes as boxes
+from time import sleep
 
 
 def check_path(directory: str) -> None:
@@ -70,6 +71,15 @@ def simulate(args: Namespace) -> None:
 
         _ = agent.execute_next_action()
         progress_bar.update()
+        print(
+            str(
+                agent.get_percent_through_env(
+                    agent.position, agent.initial_position, boxes
+                )
+            )
+            + "%"
+        )
+        sleep(0.1)
 
     if args.ue:
         agent.ue.close_osc()

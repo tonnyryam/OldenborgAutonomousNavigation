@@ -363,3 +363,50 @@ class BoxNavigator:
             # self.dominant_direction = self.determine_direction_to_target(self.target)
             # self.anchor_1 = self.rotation_anchor(self.target, self.current_box)[0]
             # self.anchor_2 = self.rotation_anchor(self.target, self.current_box)[1]
+
+        # TODO: for Tommy
+        # Maybe also pass in the current box from navigator? (I like this more as of now)
+        # index = self.boxes.index(self.get_boxes_enclosing_point(pt)[0])
+        # index = self.boxes.index(current_box)
+        # Or maybe the index of the current box?
+
+    def get_percent_through_env(self, pt: Pt, initial_pt: Pt, boxes: list) -> float:
+        """
+        takes the current and initial location of an agent, and its current environment,
+        returns its % completion of said environment
+
+        :param: pt (class Pt) updated location of agent
+        :param: initial_pt (class Pt) starting location of agent
+        :param: boxes (list) selected environment from boxnav.envrionments
+        :return: (float) percent completion of environment
+        """
+        # "progress" is how far the agent has traveled
+        progress = 0
+        # "last_box" is the box the agent is currently in (if it's in only one)
+        # and the second box it's in (if in two)
+        last_box = self.env.get_boxes_enclosing_point(pt)[
+            len(self.env.get_boxes_enclosing_point(pt)) - 1
+        ]
+        # "dist_btwn_targets" is a list of the distance between targets starting
+        # with the length from the agent's initial location to the first target
+        dist_btwn_targets = [Pt.distance(initial_pt, boxes[0].target)]
+
+        # adds to "dist_btwn_targets"
+        for i in range(len(boxes) - 1):
+            dist_btwn_targets.append(
+                Pt.distance(
+                    boxes[i].target,
+                    boxes[i + 1].target,
+                )
+            )
+
+        # adds the distance between all the targets it has passed to "progress"
+        for i in range(boxes.index(last_box)):
+            progress += dist_btwn_targets[i]
+        # adds the distance it has traveled from the last target
+        progress += dist_btwn_targets[boxes.index(last_box)] - Pt.distance(
+            pt,
+            last_box.target,
+        )
+
+        return (progress / sum(dist_btwn_targets)) * 100

@@ -60,37 +60,6 @@ def parse_args():
     return arg_parser.parse_args()
 
 
-targets = [
-    (4940, 870),
-    (4000, 870),
-    (4000, 400),
-    (255, 400),
-    (255, -1850),
-    (-825, -1850),
-    (-825, 2485),
-    (150, 2485),
-]
-
-
-def dist(a: tuple[int, int], b: tuple[int, int]) -> float:
-    dx = a[0] - b[0]
-    dy = a[1] - b[1]
-    return math.sqrt(dx * dx + dy * dy)
-
-
-# 710 is the distance between where agent starts and first target
-# didn't add coordinates for starting point in targets since it isn't a target
-distance_between_targets = [710] + [dist(a, b) for a, b in zip(targets, targets[1:])]
-
-
-# TODO: use boxenv.py for this functionality
-def reach_target(num_hit, coords):
-    if coords[0] in range(
-        targets[num_hit][0] - 20, targets[num_hit][0] + 20
-    ) and coords[1] in range(targets[num_hit][1] - 20, targets[num_hit][1] + 20):
-        return True
-
-
 def main():
     args = parse_args()
 
@@ -157,9 +126,6 @@ def main():
         ue.reset()
         print("Connected to", ue.get_project_name())
         print("Saving images to", output_dir)
-
-        targets_reached = 0
-        distance = 0
 
         previous_action = ""
         for action_step in range(args.max_actions):
