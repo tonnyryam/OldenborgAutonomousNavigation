@@ -369,7 +369,7 @@ class BoxNavigator:
     def __sync_ue_rotation(self) -> None:
         try:
             # Conversion from Box to unreal location is (180 - boxYaw) = unrealYaw
-            unreal_yaw: float = degrees(180 - self.rotation)
+            unreal_yaw: float = 180 - degrees(self.rotation)
             self.ue.set_yaw(unreal_yaw)
             # self.ue.set_yaw(self.rotation)
 
