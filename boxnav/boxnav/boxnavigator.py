@@ -2,6 +2,7 @@ from enum import Enum
 from math import cos, degrees, sin
 from pathlib import Path
 from random import choice, random, randrange
+from time import sleep
 from typing import Callable
 from time import sleep
 
@@ -463,12 +464,7 @@ class BoxNavigator:
             # self.anchor_1 = self.rotation_anchor(self.target, self.current_box)[0]
             # self.anchor_2 = self.rotation_anchor(self.target, self.current_box)[1]
 
-        # TODO: for Tommy
-        # Maybe also pass in the current box from navigator? (I like this more as of now)
-        # index = self.boxes.index(self.get_boxes_enclosing_point(pt)[0])
-        # index = self.boxes.index(current_box)
-        # Or maybe the index of the current box?
-
+    # TODO: move to boxenv
     def get_percent_through_env(self) -> float:
         last_box = self.env.get_boxes_enclosing_point(self.position)[-1]
         progress = sum(d for d in self.env_distances[: self.env.boxes.index(last_box)])
