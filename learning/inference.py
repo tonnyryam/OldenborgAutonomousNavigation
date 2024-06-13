@@ -50,6 +50,7 @@ def inference_func(model, image_file):
     match action_to_take:
         case "forward":
             take_action = Action.FORWARD
+            # print("\tInference - set take action", take_action)
         case "left":
             take_action = Action.ROTATE_LEFT
         case "right":

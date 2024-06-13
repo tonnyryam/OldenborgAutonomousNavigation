@@ -27,13 +27,6 @@ class Action(Enum):
         return self.name
 
 
-# def test_func(a: Action) -> Action:
-#     return Action.FORWARD
-
-
-# test_func("hello")
-
-
 class Navigator(Enum):
     PERFECT = 0
     WANDERING = 1
@@ -179,6 +172,7 @@ class BoxNavigator:
                 print("Check if UE packaged game is running.")
                 raise SystemExit
 
+            print("initial sync: ")
             self.__sync_ue_position()
             self.__sync_ue_rotation()
 
@@ -243,7 +237,6 @@ class BoxNavigator:
                 self.num_actions_executed % self.randomize_interval == 0
                 and self.num_actions_executed != 0
             ):
-                print("enter texture if statement")
                 random_surface = choice(list(TexturedSurface))
                 self.ue.set_texture(random_surface, randrange(NUM_TEXTURES))
 
@@ -266,9 +259,20 @@ class BoxNavigator:
             else:
                 break
 
+        print(
+            "\tValid Action - current position, agent: ",
+            self.position,
+            degrees(self.rotation),
+            ", UE: ",
+            self.ue.get_location(),
+            self.ue.get_rotation(),
+            "\n",
+        )
+        # print("BoxNavigator received action", action_navigator)
         match action_navigator:
             case Action.FORWARD:
                 self.__action_translate(action_navigator)
+                print("BoxNavigator should execute forward:")
 
             case Action.BACKWARD:
                 self.__action_translate(action_navigator)
@@ -286,6 +290,17 @@ class BoxNavigator:
                 raise NotImplementedError("Unknown action.")
 
         self.num_actions_executed += 1
+        # print("Moved ", action_navigator)
+        print(
+            "\tAfter, ",
+            action_navigator,
+            ", agent: ",
+            self.position,
+            degrees(self.rotation),
+            ", UE: ",
+            self.ue.get_location(),
+            self.ue.get_rotation(),
+        )
 
         # Update the animation
         # TODO: Also call this code in the constructor(?)
@@ -305,7 +320,23 @@ class BoxNavigator:
         new_y = self.position.y + sign * self.translation_increment * sin(self.rotation)
         possible_new_position = Pt(new_x, new_y)
 
+        print(
+            "\nCurrent location, agent: ",
+            self.position,
+            ", UE: ",
+            self.ue.get_location(),
+        )
+        print("Direction: ", degrees(self.rotation))
+        print("\tIn Boxes: ", self.env.get_boxes_enclosing_point(self.position))
+        print("Resulting location: ", possible_new_position)
+        print("\tIn Boxes: ", self.env.get_boxes_enclosing_point(possible_new_position))
+
         # TODO: checks all boxes (can probably make more efficient)
+        print(
+            "move_is_possible is",
+            len(self.env.get_boxes_enclosing_point(possible_new_position)) > 0,
+            "\n",
+        )
         return len(self.env.get_boxes_enclosing_point(possible_new_position)) > 0
 
     def __sync_ue_position(self) -> None:
@@ -321,8 +352,14 @@ class BoxNavigator:
 
             # Get x, y position from boxsim
             x, y = self.position.xy()
-
+            # print("position y: ", y)
             self.ue.set_location(x, y, unreal_z)
+            # print(
+            #     "Position synced. Current location, agent: ",
+            #     self.position,
+            #     ", UE: ",
+            #     self.ue.get_location(),
+            # )
 
         except TimeoutError:
             self.ue.close_osc()
