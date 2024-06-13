@@ -3,6 +3,7 @@ from math import cos, degrees, sin
 from pathlib import Path
 from random import choice, random, randrange
 from typing import Callable
+from time import sleep
 
 from celluloid import Camera
 from matplotlib import pyplot as plt
@@ -144,8 +145,12 @@ class BoxNavigator:
                 self.image_directory.mkdir(parents=True, exist_ok=True)
 
                 self.image_extension = image_extension
+                self.images_saved = 0
 
         self.num_resets = 0
+        self.trial_num = 0
+
+        self.previous_action = Action.NO_ACTION
 
         # All other member variables are initialized in reset()
         self.reset()
@@ -157,6 +162,7 @@ class BoxNavigator:
 
         self.num_actions_executed = 0
         self.num_resets += 1
+        self.trial_num += 1
 
         self.is_stuck_counter = 0
 
@@ -178,6 +184,7 @@ class BoxNavigator:
                 print("Check if UE packaged game is running.")
                 raise SystemExit
 
+            print("initial sync: ")
             self.__sync_ue_position()
             self.__sync_ue_rotation()
 
@@ -219,53 +226,152 @@ class BoxNavigator:
     def execute_next_action(self) -> tuple[Action, Action]:
         self.__update_target_if_necessary()
 
+        # Compute the correct action
         action_correct = self.__compute_action_correct()
-        action_navigator = self.__compute_action_navigator()
 
+        if self.sync_with_ue:
+            # Save an image if applicable (using correct action's angle to target in file name)
+            if self.image_directory:
+                # Generate the next filename - Negative because unreal using a left-hand coordinate system
+                angle = f"{-self.signed_angle_to_target:+.2f}".replace(".", "p")
+                self.latest_image_filepath = (
+                    f"{self.image_directory}/"
+                    f"{self.trial_num:03}_{self.images_saved:06}_{angle}.{str(self.image_extension).lower()}"
+                )
+
+                sleep(0.25)
+                self.ue.save_image(self.latest_image_filepath)
+                sleep(0.25)
+
+                self.images_saved += 1
+
+            if (
+                self.num_actions_executed % self.randomize_interval == 0
+                and self.num_actions_executed != 0
+            ):
+                random_surface = choice(list(TexturedSurface))
+                self.ue.set_texture(random_surface, randrange(NUM_TEXTURES))
+
+        # Loop until we have executed an action or til stuck a certain number of times
+        while True:
+            # If stuck enough times, early return no action
+            if self.is_stuck_counter >= self.is_stuck_threshold:
+                return Action.NO_ACTION, action_correct
+
+            # Compute the navigator action
+            action_navigator = self.__compute_action_navigator()
+
+            # Check if navigator action is possible
+            if action_navigator in [Action.FORWARD, Action.BACKWARD]:
+                if self.__move_is_possible(action_navigator):
+                    self.is_stuck_counter = 0
+                    break
+                else:
+                    self.is_stuck_counter += 1
+            else:
+                break
+
+        print(
+            "\tValid Action - current position, agent: ",
+            self.position,
+            degrees(self.rotation),
+            ", UE: ",
+            self.ue.get_location(),
+            self.ue.get_rotation(),
+            "\n",
+        )
+        # print("BoxNavigator received action", action_navigator)
         match action_navigator:
             case Action.FORWARD:
-                action_executed = self.__action_move_forward()
+                self.__action_translate(action_navigator)
+                print("BoxNavigator should execute forward:")
 
             case Action.BACKWARD:
-                action_executed = self.__action_move_backward()
+                self.__action_translate(action_navigator)
 
             case Action.ROTATE_LEFT:
-                action_executed = self.__action_rotate_left()
+                self.__action_rotate(action_navigator)
 
             case Action.ROTATE_RIGHT:
-                action_executed = self.__action_rotate_right()
+                self.__action_rotate(action_navigator)
 
             case Action.TELEPORT:
-                action_executed = self.__action_teleport()
+                self.__action_teleport()
 
             case _:
                 raise NotImplementedError("Unknown action.")
 
-        # If action is forward or backward and we don't move
-        if action_executed == Action.NO_ACTION:
-            self.is_stuck_counter += 1
-        elif action_executed in [Action.FORWARD, Action.BACKWARD]:
-            self.is_stuck_counter = 0
+        self.num_actions_executed += 1
+        # print("Moved ", action_navigator)
+        print(
+            "\tAfter, ",
+            action_navigator,
+            ", agent: ",
+            self.position,
+            degrees(self.rotation),
+            ", UE: ",
+            self.ue.get_location(),
+            self.ue.get_rotation(),
+        )
 
         # Update the animation
+        # TODO: Also call this code in the constructor(?)
         if self.generating_animation:
             self.env.display(self.axis)
             self.display()
             self.axis.invert_xaxis()
             self.camera.snap()
 
-        self.num_actions_executed += 1
-
-        if self.sync_with_ue:
-            if self.num_actions_executed % self.randomize_interval == 0:
-                random_surface = choice(list(TexturedSurface))
-                self.ue.set_texture(random_surface, randrange(NUM_TEXTURES))
-
+        self.previous_action = action_navigator
         return action_navigator, action_correct
+
+    def __move_is_possible(self, direction: Action) -> bool:
+        sign = -1 if direction == Action.BACKWARD else 1
+
+        new_x = self.position.x + sign * self.translation_increment * cos(self.rotation)
+        new_y = self.position.y + sign * self.translation_increment * sin(self.rotation)
+        possible_new_position = Pt(new_x, new_y)
+
+        print(
+            "\nCurrent location, agent: ",
+            self.position,
+            ", UE: ",
+            self.ue.get_location(),
+        )
+        print("Direction: ", degrees(self.rotation))
+        print("\tIn Boxes: ", self.env.get_boxes_enclosing_point(self.position))
+        print("Resulting location: ", possible_new_position)
+        print("\tIn Boxes: ", self.env.get_boxes_enclosing_point(possible_new_position))
+
+        # TODO: checks all boxes (can probably make more efficient)
+        print(
+            "move_is_possible is",
+            len(self.env.get_boxes_enclosing_point(possible_new_position)) > 0,
+            "\n",
+        )
+        return len(self.env.get_boxes_enclosing_point(possible_new_position)) > 0
 
     def __sync_ue_position(self) -> None:
         try:
-            self.ue.set_location_xy(self.position.x, self.position.y)
+            # self.ue.set_location_xy(self.position.x, self.position.y)
+
+            # NOTE: the following moves the UE agent to match the navigator/python
+            # there exists code to sync box position to unreal
+            # (in boxunreal called sync_box_position_to_unreal)
+
+            # Get z position from UE
+            _, _, unreal_z = self.ue.get_location()
+
+            # Get x, y position from boxsim
+            x, y = self.position.xy()
+            # print("position y: ", y)
+            self.ue.set_location(x, y, unreal_z)
+            # print(
+            #     "Position synced. Current location, agent: ",
+            #     self.position,
+            #     ", UE: ",
+            #     self.ue.get_location(),
+            # )
 
         except TimeoutError:
             self.ue.close_osc()
@@ -274,51 +380,34 @@ class BoxNavigator:
 
     def __sync_ue_rotation(self) -> None:
         try:
-            self.ue.set_location_xy(self.position.x, self.position.y)
+            # Conversion from Box to unreal location is (180 - boxYaw) = unrealYaw
+            unreal_yaw: float = 180 - degrees(self.rotation)
+            self.ue.set_yaw(unreal_yaw)
+            # self.ue.set_yaw(self.rotation)
 
         except TimeoutError:
             self.ue.close_osc()
-            print("Could not sync position with UE.")
+            print("Could not sync rotation with UE.")
             raise SystemExit
 
-    def __action_move(self, sign: int) -> Action:
+    def __action_translate(self, direction: Action) -> None:
+        sign = -1 if direction == Action.BACKWARD else 1
+
         new_x = self.position.x + sign * self.translation_increment * cos(self.rotation)
         new_y = self.position.y + sign * self.translation_increment * sin(self.rotation)
         possible_new_position = Pt(new_x, new_y)
 
-        # TODO: checks all boxes (can probably make more efficient)
-        if self.env.get_boxes_enclosing_point(possible_new_position):
-            self.position = possible_new_position
+        self.position = possible_new_position
 
-            if self.sync_with_ue:
-                self.__sync_ue_position()
+        if self.sync_with_ue:
+            self.__sync_ue_position()
 
-            return Action.FORWARD if sign > 0 else Action.BACKWARD
-
-        else:
-            return Action.NO_ACTION
-
-    def __action_move_forward(self) -> Action:
-        return self.__action_move(+1)
-
-    def __action_move_backward(self) -> Action:
-        return self.__action_move(-1)
-
-    def __action_rotate_left(self) -> Action:
-        self.rotation += self.rotation_increment
+    def __action_rotate(self, direction: Action) -> None:
+        sign = -1 if direction == Action.ROTATE_RIGHT else 1
+        self.rotation += sign * self.rotation_increment
 
         if self.sync_with_ue:
             self.__sync_ue_rotation()
-
-        return Action.ROTATE_LEFT
-
-    def __action_rotate_right(self) -> Action:
-        self.rotation -= self.rotation_increment
-
-        if self.sync_with_ue:
-            self.__sync_ue_rotation()
-
-        return Action.ROTATE_RIGHT
 
     def __action_teleport(self) -> Action: ...
 
@@ -326,14 +415,14 @@ class BoxNavigator:
         # Compute angle between heading and target
         heading_vector = Pt(cos(self.rotation), sin(self.rotation)).normalized()
         target_vector = (self.target - self.position).normalized()
-        signed_angle_to_target = Pt.angle_between(heading_vector, target_vector)
+        self.signed_angle_to_target = Pt.angle_between(heading_vector, target_vector)
 
         # Already facing correct direction
-        if abs(signed_angle_to_target) < self.target_half_wedge:
+        if abs(self.signed_angle_to_target) < self.target_half_wedge:
             action = Action.FORWARD
 
         # Need to rotate left (think of unit circle); rotation indicated by positive degrees
-        elif signed_angle_to_target > 0:
+        elif self.signed_angle_to_target > 0:
             action = Action.ROTATE_LEFT
 
         # Need to rotate right (think of unit circle); rotation indicated by negative degrees
@@ -357,7 +446,7 @@ class BoxNavigator:
         # - number of resets
         # - number of actions executed
         # - ...
-        return self.vision_callback(self.latest_image_filepath)
+        return self.vision_callback(self.previous_action, self.latest_image_filepath)
 
     def __update_target_if_necessary(self) -> None:
         assert not self.at_final_target(), "Already at final target."
