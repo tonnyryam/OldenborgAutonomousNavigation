@@ -23,7 +23,14 @@ def main():
         "--set_yaw", type=float, help="Set the rotation (on xy-plane) of Unreal Camera"
     )
     parser.add_argument(
-        "--get_location", help="Return current location of Unreal Camera"
+        "--get_location",
+        action="store_true",
+        help="Return current location of Unreal Camera",
+    )
+    parser.add_argument(
+        "--get_rotation",
+        action="store_true",
+        help="Return current (roll, pitch, yaw) of Unreal Camera",
     )
 
     args = parser.parse_args()
@@ -39,7 +46,10 @@ def main():
             osc_communicator.set_yaw(args.set_yaw)
 
         if args.get_location:
-            osc_communicator.get_location()
+            print(osc_communicator.get_location())
+
+        if args.get_rotation:
+            print(osc_communicator.get_rotation())
 
 
 # Calling main function
