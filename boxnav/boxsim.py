@@ -8,6 +8,7 @@ from boxnav.box import Pt
 from boxnav.boxenv import BoxEnv
 from boxnav.boxnavigator import BoxNavigator, Navigator
 from boxnav.environments import oldenborg_boxes as boxes
+from time import sleep
 
 
 def check_path(directory: str) -> None:
@@ -52,7 +53,8 @@ def simulate(args: Namespace) -> None:
     )
 
     manager = enlighten.get_manager()
-    progress_bar = manager.counter(total=args.max_total_actions, desc="Actions")
+    progress_bar = manager.counter(total=args.max_total_actions, desc="   Actions")
+    env_completion = manager.counter(total=100, desc="Completion")
 
     for _ in range(args.max_total_actions):
         if agent.is_stuck() or agent.at_final_target():
@@ -70,6 +72,10 @@ def simulate(args: Namespace) -> None:
 
         _ = agent.execute_next_action()
         progress_bar.update()
+        # print(str(agent.get_percent_through_env()) + "%")
+        env_completion.count = int(agent.get_percent_through_env())
+        env_completion.update()
+        sleep(0.1)
 
     if args.ue:
         agent.ue.close_osc()
