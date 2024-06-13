@@ -40,10 +40,48 @@ def check_path(directory: str) -> None:
         raise ValueError(f"Directory {path} is not empty.")
 
 
-def inference_func(model, image_file):
+def inference_func(model, previous_action: Action, image_file: str):
     # Predict correct action
     action_to_take, action_index, action_probs = model.predict(image_file)
-    # action_prob = action_probs[action_index]
+    action_prob = action_probs[action_index]
+
+    # print(action_probs)
+    # print("first argsort: ", action_probs.argsort())
+
+    # Translate Action to string
+    previous = ""
+    match previous_action:
+        case Action.ROTATE_LEFT:
+            previous = "left"
+        case Action.ROTATE_RIGHT:
+            previous = "right"
+        case Action.FORWARD:
+            previous = "forward"
+
+    # Prevent cycling actions (e.g., left followed by right)
+    # TODO: need to receive previous action
+    if action_to_take == "left" and previous == "right":
+        # print("Enter first if, action_prob before: ", action_prob)
+        # print("Enter first if, new argsort: ", action_probs[action_probs.argsort()[1]])
+        # action_prob = action_probs.argsort()[1]
+        # print("action_prob after: ", action_prob)
+
+        # print("\t1. if statement, want to take: ", action_prob)
+        # print("\t", action_probs)
+        action_prob = action_probs[action_probs.argsort()[1]]
+        action_to_take = model.dls.vocab[action_probs.argsort()[1]]
+
+    elif action_to_take == "right" and previous == "left":
+        # print("Enter second if")
+        # action_prob = action_probs.argsort()[1]
+        # action_to_take = model.dls.vocab[action_probs.argsort()[1]]
+
+        # print("\t2. if statement, want to take: ", action_prob)
+        # print("\t", action_probs)
+        action_prob = action_probs[action_probs.argsort()[1]]
+        action_to_take = model.dls.vocab[action_probs.argsort()[1]]
+
+    # print(f"Moving {action_to_take} with probability {action_prob:.2f}")
 
     # Translate fast.ai action to an Action object
     take_action = Action.NO_ACTION
@@ -59,6 +97,7 @@ def inference_func(model, image_file):
             raise ValueError(f"Unknown action: {action_to_take}")
 
     return take_action
+    # return Action.FORWARD
 
 
 def parse_args():
@@ -242,9 +281,9 @@ def main():
         if agent.is_stuck():
             print("Agent is stuck.")
             break
-        elif len(box_env.get_boxes_enclosing_point(agent.position)) == 0:
-            print("Agent is out of bounds.")
-            break
+        # elif len(box_env.get_boxes_enclosing_point(agent.position)) == 0:
+        #     print("Agent is out of bounds.")
+        #     break
 
     if args.ue:
         agent.ue.close_osc()

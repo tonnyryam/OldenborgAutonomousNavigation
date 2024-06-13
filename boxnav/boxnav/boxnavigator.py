@@ -140,6 +140,8 @@ class BoxNavigator:
         self.num_resets = 0
         self.trial_num = 0
 
+        self.previous_action = Action.NO_ACTION
+
         # All other member variables are initialized in reset()
         self.reset()
 
@@ -434,7 +436,7 @@ class BoxNavigator:
         # - number of resets
         # - number of actions executed
         # - ...
-        return self.vision_callback(self.latest_image_filepath)
+        return self.vision_callback(self.previous_action, self.latest_image_filepath)
 
     def __update_target_if_necessary(self) -> None:
         assert not self.at_final_target(), "Already at final target."
