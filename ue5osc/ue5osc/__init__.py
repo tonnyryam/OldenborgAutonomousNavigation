@@ -71,7 +71,11 @@ class Communicator:
 
     def set_location(self, x: float, y: float, z: float) -> None:
         """Sets X, Y, and Z values of an Unreal Camera."""
+        # print("location prior: ", self.get_location())
         self.client.send_message("/set/location", [x, y, z])
+        # print(" y location set to: ", y)
+        # sleep(1)
+        # print("get location: ", self.get_location())
 
     def set_location_xy(self, x: float, y: float) -> None:
         """Sets X and Y values of an Unreal Camera. Z is taken from Unreal."""
@@ -79,6 +83,7 @@ class Communicator:
         _, _, unreal_z = self.get_location()
         self.set_location(x, y, unreal_z)
 
+    # NOTE: return in degrees
     def get_rotation(self) -> tuple[float, float, float]:
         """Returns roll, pitch, and yaw."""
         return self.send_and_await("/get/rotation")
