@@ -64,8 +64,6 @@ def simulate(args: Namespace) -> None:
         navigation_pbar.count = int(agent.get_percent_through_env())
         navigation_pbar.update()
 
-        sleep(0.5)
-
     if args.ue:
         agent.ue.close_osc()
 

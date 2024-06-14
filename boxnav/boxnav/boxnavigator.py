@@ -339,7 +339,7 @@ class BoxNavigator:
         #     ax.plot(self.anchor_1.x, self.anchor_1.y, "mx")
         #     ax.plot(self.anchor_2.x, self.anchor_2.y, "mx")
 
-    def save_animation(self, filename: str, progress_bar_callback=None=None) -> None:
+    def save_animation(self, filename: str, progress_bar_callback=None) -> None:
         animation = self.camera.animate()
         animation.save(filename, progress_callback=progress_bar_callback)
 

@@ -39,7 +39,8 @@ action_sequence = [
     Action.ROTATE_LEFT,
     Action.ROTATE_LEFT,
     Action.ROTATE_LEFT,
-    Action.ROTATE_RIGHT,
+    Action.FORWARD,
+    Action.FORWARD,
 ]
 
 for action in action_sequence:
