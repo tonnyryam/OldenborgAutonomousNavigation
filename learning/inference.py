@@ -2,9 +2,10 @@ import pathlib
 import platform
 from argparse import ArgumentParser
 from contextlib import contextmanager
+from functools import partial
+from math import inf, radians
 from pathlib import Path
 from time import sleep
-from math import inf, radians
 
 import wandb
 from fastai.callback.wandb import WandbCallback
@@ -13,11 +14,9 @@ from utils import y_from_filename  # noqa: F401 (needed for fastai load_learner)
 
 from boxnav.box import Pt
 from boxnav.boxenv import BoxEnv
+from boxnav.boxnavigator import Action, BoxNavigator, Navigator
 from boxnav.environments import oldenborg_boxes as boxes
-from boxnav.boxnavigator import Navigator, BoxNavigator, Action
 from ue5osc import Communicator
-
-from functools import partial
 
 
 @contextmanager
@@ -275,7 +274,7 @@ def main():
     )
 
     for _ in range(args.max_actions):
-        _ = agent.execute_next_action()
+        _ = agent.execute_navigator_action()
 
         # Prevent agent from getting stuck and/or going out-of-bounds
         if agent.is_stuck():
