@@ -88,21 +88,6 @@ class ImageQuality(IntEnum):
 
 
 def add_box_navigator_arguments(parser: ArgumentParser) -> None:
-    #
-    # Required arguments
-    #
-
-    parser.add_argument(
-        "navigator",
-        type=Navigator.argparse,
-        choices=list(Navigator),
-        help="Navigator to run.",
-    )
-
-    #
-    # Optional arguments
-    #
-
     parser.add_argument(
         "--translation_increment",
         type=float,

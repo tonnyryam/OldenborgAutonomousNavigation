@@ -128,6 +128,10 @@ def parse_args():
 def main():
     args = parse_args()
 
+    args.navigator = Navigator.VISION
+    args.ue = True
+    args.image_directory = args.output_dir
+
     wandb_entity = "arcslaboratory"
     wandb_project = args.wandb_project
     wandb_name = args.wandb_name

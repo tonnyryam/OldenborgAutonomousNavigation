@@ -22,7 +22,6 @@ argparser = ArgumentParser("Navigate around a box environment.")
 add_box_navigator_arguments(argparser)
 argparser.add_argument("delay", type=float, help="Delay between actions.")
 
-argv.insert(1, "PERFECT")
 argv.append("--ue")
 
 args = argparser.parse_args()

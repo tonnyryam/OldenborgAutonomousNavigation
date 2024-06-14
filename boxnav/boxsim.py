@@ -7,7 +7,7 @@ import enlighten
 
 from boxnav.box import Pt
 from boxnav.boxenv import BoxEnv
-from boxnav.boxnavigator import BoxNavigator, add_box_navigator_arguments
+from boxnav.boxnavigator import BoxNavigator, Navigator, add_box_navigator_arguments
 from boxnav.environments import oldenborg_boxes as boxes
 
 
@@ -102,6 +102,13 @@ def main():
     """Parse arguments and run simulation."""
 
     argparser = ArgumentParser("Navigate around a box environment.")
+
+    argparser.add_argument(
+        "navigator",
+        type=Navigator.argparse,
+        choices=list(Navigator),
+        help="Navigator to run.",
+    )
 
     add_box_navigator_arguments(argparser)
 
