@@ -6,6 +6,8 @@ from functools import partial
 from math import radians
 from pathlib import Path
 
+import enlighten
+
 import wandb
 from fastai.callback.wandb import WandbCallback
 from fastai.vision.learner import load_learner
@@ -188,8 +190,15 @@ def main():
         vision_callback=partial(inference_func, model),
     )
 
+    pbar_manager = enlighten.get_manager()
+    navigation_pbar = pbar_manager.counter(total=100, desc="Completion")
+
     for _ in range(args.max_actions):
-        _ = agent.execute_navigator_action()
+        try:
+            agent.execute_navigator_action()
+        except Exception as e:
+            print(e)
+            break
 
         if agent.is_stuck():
             print("Agent is stuck.")
