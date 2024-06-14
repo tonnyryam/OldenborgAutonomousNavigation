@@ -1,8 +1,11 @@
+from argparse import ArgumentParser
 from math import radians
+from sys import argv
+from time import sleep
 
 from boxnav.box import Pt
 from boxnav.boxenv import BoxEnv
-from boxnav.boxnavigator import Action, BoxNavigator, Navigator
+from boxnav.boxnavigator import Action, BoxNavigator, add_box_navigator_arguments
 from boxnav.environments import oldenborg_boxes as boxes
 
 box_env = BoxEnv(boxes)
@@ -14,40 +17,18 @@ initial_y = starting_box.lower + 50
 initial_position = Pt(initial_x, initial_y)
 initial_rotation = radians(90)
 
-resolution = "244x244"
-quality = 1
-image_ext = "png"
-translation_increment = 120.0
-rotation_increment = radians(1)
-distance_threshold = 75
-direction_threshold = radians(12)
-randomize_interval = int("inf")
-navigator = Navigator.PERFECT
-anim_ext = "gif"
-ue = True
-py_port = 7001
-ue_port = 7447
-save_images = None
+argparser = ArgumentParser("Navigate around a box environment.")
 
-agent = BoxNavigator(
-    box_env,
-    initial_position,
-    initial_rotation,
-    distance_threshold,
-    direction_threshold,
-    translation_increment,
-    rotation_increment,
-    navigator,
-    anim_ext,
-    ue,
-    py_port,
-    ue_port,
-    resolution,
-    quality,
-    save_images,
-    image_ext,
-    randomize_interval,
-)
+add_box_navigator_arguments(argparser)
+argparser.add_argument("delay", type=float, help="Delay between actions.")
+
+argv.insert(1, "PERFECT")
+argv.append("--ue")
+
+args = argparser.parse_args()
+
+agent = BoxNavigator(box_env, initial_position, initial_rotation, args)
+
 
 action_sequence = [
     Action.FORWARD,
@@ -60,24 +41,26 @@ action_sequence = [
 ]
 
 for action in action_sequence:
-    match action:
-        case Action.FORWARD:
-            agent.__action_translate(Action.FORWARD)
-        case Action.BACKWARD:
-            agent.__action_translate(Action.BACKWARD)
-        case Action.ROTATE_LEFT:
-            agent.__action_rotate(Action.ROTATE_LEFT)
-        case Action.ROTATE_RIGHT:
-            agent.__action_rotate(Action.ROTATE_RIGHT)
-
     print("-" * 64)
     print("Action:", action)
+
+    if args.delay != float("inf"):
+        sleep(args.delay)
+    else:
+        _ = input("Press Enter to continue... ")
+
+    agent.execute_action(action)
 
     print("BoxNav position:", agent.position)
     print("Unreal position:", agent.ue.get_location())
 
-    print("BoxNav rotation:", agent.rotation)
-    print("Unreal rotation:", agent.ue.get_rotation())
+    print(f"BoxNav rotation: {agent.rotation:0.03}")
+    print(f"Unreal rotation: {radians(agent.ue.get_rotation()[2]):0.03}")
 
+
+agent.ue.close_osc()
+
+if args.animation_extension:
+    agent.save_animation("test_animation.gif")
 
 print("Done!")
