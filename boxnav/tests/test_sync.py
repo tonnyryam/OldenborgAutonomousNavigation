@@ -67,9 +67,4 @@ agent.ue.close_osc()
 if args.animation_extension:
     agent.save_animation("test_animation.gif")
 
-agent.ue.close_osc()
-
-if args.animation_extension:
-    agent.save_animation("test_animation.gif")
-
 print("Done!")
