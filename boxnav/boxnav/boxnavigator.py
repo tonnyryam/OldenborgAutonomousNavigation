@@ -214,7 +214,7 @@ class BoxNavigator:
         #     ax.plot(self.anchor_1.x, self.anchor_1.y, "mx")
         #     ax.plot(self.anchor_2.x, self.anchor_2.y, "mx")
 
-    def save_animation(self, filename: str, progress_bar_callback) -> None:
+    def save_animation(self, filename: str, progress_bar_callback=None) -> None:
         animation = self.camera.animate()
         animation.save(filename, progress_callback=progress_bar_callback)
 
@@ -273,7 +273,9 @@ class BoxNavigator:
                 break
 
         print(
-            "\tValid Action - current position, agent: ",
+            "\tValid Action ",
+            action_navigator,
+            "- navigator: ",
             self.position,
             degrees(self.rotation),
             ", UE: ",
@@ -304,16 +306,6 @@ class BoxNavigator:
 
         self.num_actions_executed += 1
         # print("Moved ", action_navigator)
-        print(
-            "\tAfter, ",
-            action_navigator,
-            ", agent: ",
-            self.position,
-            degrees(self.rotation),
-            ", UE: ",
-            self.ue.get_location(),
-            self.ue.get_rotation(),
-        )
 
         # Update the animation
         # TODO: Also call this code in the constructor(?)
@@ -333,23 +325,23 @@ class BoxNavigator:
         new_y = self.position.y + sign * self.translation_increment * sin(self.rotation)
         possible_new_position = Pt(new_x, new_y)
 
-        print(
-            "\nCurrent location, agent: ",
-            self.position,
-            ", UE: ",
-            self.ue.get_location(),
-        )
-        print("Direction: ", degrees(self.rotation))
-        print("\tIn Boxes: ", self.env.get_boxes_enclosing_point(self.position))
-        print("Resulting location: ", possible_new_position)
-        print("\tIn Boxes: ", self.env.get_boxes_enclosing_point(possible_new_position))
+        # print(
+        #     "\nCurrent location, agent: ",
+        #     self.position,
+        #     ", UE: ",
+        #     self.ue.get_location(),
+        # )
+        # print("Direction: ", degrees(self.rotation))
+        # print("\tIn Boxes: ", self.env.get_boxes_enclosing_point(self.position))
+        # print("Resulting location: ", possible_new_position)
+        # print("\tIn Boxes: ", self.env.get_boxes_enclosing_point(possible_new_position))
 
         # TODO: checks all boxes (can probably make more efficient)
-        print(
-            "move_is_possible is",
-            len(self.env.get_boxes_enclosing_point(possible_new_position)) > 0,
-            "\n",
-        )
+        # print(
+        #     "move_is_possible is",
+        #     len(self.env.get_boxes_enclosing_point(possible_new_position)) > 0,
+        #     "\n",
+        # )
         return len(self.env.get_boxes_enclosing_point(possible_new_position)) > 0
 
     def __sync_ue_position(self) -> None:
@@ -391,6 +383,9 @@ class BoxNavigator:
             print("Could not sync rotation with UE.")
             raise SystemExit
 
+    def action_translate(self, direction: Action) -> None:
+        self.__action_translate(direction)
+
     def __action_translate(self, direction: Action) -> None:
         sign = -1 if direction == Action.BACKWARD else 1
 
@@ -402,6 +397,9 @@ class BoxNavigator:
 
         if self.sync_with_ue:
             self.__sync_ue_position()
+
+    def action_rotate(self, direction: Action) -> None:
+        self.__action_rotate(direction)
 
     def __action_rotate(self, direction: Action) -> None:
         sign = -1 if direction == Action.ROTATE_RIGHT else 1
@@ -418,16 +416,35 @@ class BoxNavigator:
         target_vector = (self.target - self.position).normalized()
         self.signed_angle_to_target = Pt.angle_between(heading_vector, target_vector)
 
+        print(
+            "\t\t\tHeading vector",
+            heading_vector,
+            "\n\t\t\tTarget vector",
+            target_vector,
+            "\n\t\t\tAngle to target in degrees ",
+            degrees(self.signed_angle_to_target),
+            "\n\t\t\ttarget",
+            self.target,
+        )
+
         # Already facing correct direction
         if abs(self.signed_angle_to_target) < self.target_half_wedge:
             action = Action.FORWARD
 
         # Need to rotate left (think of unit circle); rotation indicated by positive degrees
         elif self.signed_angle_to_target > 0:
+            print(
+                "Rotate left, angle between target: ",
+                degrees(self.signed_angle_to_target),
+            )
             action = Action.ROTATE_LEFT
 
         # Need to rotate right (think of unit circle); rotation indicated by negative degrees
         else:
+            print(
+                "Rotate right, angle between target: ",
+                degrees(self.signed_angle_to_target),
+            )
             action = Action.ROTATE_RIGHT
 
         return action

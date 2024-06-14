@@ -1,4 +1,5 @@
-from math import radians
+from math import degrees, radians, inf
+from time import sleep
 
 from boxnav.box import Pt
 from boxnav.boxenv import BoxEnv
@@ -21,7 +22,7 @@ translation_increment = 120.0
 rotation_increment = radians(1)
 distance_threshold = 75
 direction_threshold = radians(12)
-randomize_interval = int("inf")
+randomize_interval = inf
 navigator = Navigator.PERFECT
 anim_ext = "gif"
 ue = True
@@ -51,24 +52,26 @@ agent = BoxNavigator(
 
 action_sequence = [
     Action.FORWARD,
-    Action.ROTATE_LEFT,
-    Action.ROTATE_LEFT,
-    Action.ROTATE_LEFT,
     Action.FORWARD,
     Action.FORWARD,
     Action.FORWARD,
+    Action.FORWARD,
+    Action.ROTATE_LEFT,
+    Action.ROTATE_LEFT,
+    Action.ROTATE_LEFT,
+    Action.ROTATE_RIGHT,
 ]
 
 for action in action_sequence:
     match action:
         case Action.FORWARD:
-            agent.__action_translate(Action.FORWARD)
+            agent.action_translate(Action.FORWARD)
         case Action.BACKWARD:
-            agent.__action_translate(Action.BACKWARD)
+            agent.action_translate(Action.BACKWARD)
         case Action.ROTATE_LEFT:
-            agent.__action_rotate(Action.ROTATE_LEFT)
+            agent.action_rotate(Action.ROTATE_LEFT)
         case Action.ROTATE_RIGHT:
-            agent.__action_rotate(Action.ROTATE_RIGHT)
+            agent.action_rotate(Action.ROTATE_RIGHT)
 
     print("-" * 64)
     print("Action:", action)
@@ -76,8 +79,13 @@ for action in action_sequence:
     print("BoxNav position:", agent.position)
     print("Unreal position:", agent.ue.get_location())
 
-    print("BoxNav rotation:", agent.rotation)
+    print("BoxNav rotation:", degrees(agent.rotation))
     print("Unreal rotation:", agent.ue.get_rotation())
 
+    sleep(0.1)
+
+
+agent.ue.close_osc()
+# agent.save_animation("animation.gif")
 
 print("Done!")
