@@ -186,9 +186,24 @@ def main():
     pbar_manager = enlighten.get_manager()
     navigation_pbar = pbar_manager.counter(total=100, desc="Completion")
 
+    total_actions_taken, corect_action_taken = 0
+    forward_count, rotate_left_count, rotate_right_count = 0
+
     for _ in range(args.max_actions):
         try:
-            agent.execute_navigator_action()
+            executed_action, correct_action = agent.execute_navigator_action()
+
+            total_actions_taken += 1
+            corect_action_taken += 1 if executed_action == correct_action else 0
+
+            match executed_action:
+                case Action.FORWARD:
+                    forward_count += 1
+                case Action.ROTATE_LEFT:
+                    rotate_left_count += 1
+                case Action.ROTATE_RIGHT:
+                    rotate_right_count += 1
+
         except Exception as e:
             print(e)
             break
@@ -200,6 +215,15 @@ def main():
         # Navigation progress is based on the percentage of the environment navigated
         navigation_pbar.count = int(agent.get_percent_through_env())
         navigation_pbar.update()
+
+    inference_data = [
+        agent.get_percent_through_env,
+        total_actions_taken,
+        corect_action_taken,
+        forward_count,
+        rotate_left_count,
+        rotate_right_count,
+    ]
 
     agent.ue.close_osc()
     navigation_pbar.close()
