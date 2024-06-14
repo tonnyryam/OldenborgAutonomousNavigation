@@ -10,7 +10,7 @@ def main():
     parser.add_argument("--ip", type=str, default="127.0.0.1", help="IP Address")
     parser.add_argument("--ue_port", type=int, default=7447, help="UE server port.")
     parser.add_argument("--py_port", type=int, default=7001, help="Python server port.")
-    # parser.add_argument("--resolution", type=str, default="1280x720", help="Resolution")
+    parser.add_argument("--resolution", type=str, default="1280x720", help="Resolution")
     # parser.add_argument("--save_image", type=str, help="Image path")
     parser.add_argument("--reset", action="store_true", help="Reset to start position")
     parser.add_argument(
@@ -36,6 +36,8 @@ def main():
     args = parser.parse_args()
 
     with Communicator(args.ip, args.ue_port, args.py_port) as osc_communicator:
+        # TODO: Execute arguments in order... (probably need to manually reference argv)
+
         if args.reset:
             osc_communicator.reset()
 
@@ -50,6 +52,9 @@ def main():
 
         if args.get_rotation:
             print(osc_communicator.get_rotation())
+
+        if args.resolution:
+            osc_communicator.set_resolution(args.resolution)
 
 
 # Calling main function

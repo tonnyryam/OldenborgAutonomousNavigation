@@ -2,9 +2,9 @@ import pathlib
 import platform
 from argparse import ArgumentParser
 from contextlib import contextmanager
+from functools import partial
+from math import radians
 from pathlib import Path
-from time import sleep
-from math import inf, radians
 
 import wandb
 from fastai.callback.wandb import WandbCallback
@@ -13,11 +13,13 @@ from utils import y_from_filename  # noqa: F401 (needed for fastai load_learner)
 
 from boxnav.box import Pt
 from boxnav.boxenv import BoxEnv
+from boxnav.boxnavigator import (
+    Action,
+    BoxNavigator,
+    Navigator,
+    add_box_navigator_arguments,
+)
 from boxnav.environments import oldenborg_boxes as boxes
-from boxnav.boxnavigator import Navigator, BoxNavigator, Action
-from ue5osc import Communicator
-
-from functools import partial
 
 
 @contextmanager
@@ -111,9 +113,6 @@ def parse_args():
 
     arg_parser.add_argument("output_dir", help="Directory to store saved images.")
 
-    #
-    # Optional arguments
-    #
     arg_parser.add_argument(
         "--max_actions",
         type=int,
@@ -121,66 +120,7 @@ def parse_args():
         help="Maximum number of actions to take.",
     )
 
-    # BoxNavigator python arguments
-    arg_parser.add_argument(
-        "--distance_threshold",
-        type=int,
-        default=75,
-        help="Determines how close the robot has to be to the target to activate the next one.",
-    )
-    arg_parser.add_argument(
-        "--direction_threshold",
-        type=int,
-        default=radians(12),
-        help="Determines how close the robot has to be to the target to activate the next one.",
-    )
-    arg_parser.add_argument(
-        "--translation_increment",
-        type=float,
-        default=120.0,
-        help="Movement forward per action.",
-    )
-    arg_parser.add_argument(
-        "--rotation_increment",
-        type=float,
-        default=radians(10.0),
-        help="Rotation per action (in degrees for ue5osc).",
-    )
-
-    arg_parser.add_argument("--anim_ext", type=str, help="Output format for animation.")
-
-    # BoxNavigatorBase UE arguments
-    arg_parser.add_argument(
-        "--ue", action="store_true", help="Connect and send command to Unreal Engine."
-    )
-    arg_parser.add_argument(
-        "--py_port", type=int, default=7001, help="Python OSC server port."
-    )
-    arg_parser.add_argument(
-        "--ue_port", type=int, default=7447, help="Unreal Engine OSC server port."
-    )
-    arg_parser.add_argument(
-        "--resolution",
-        type=str,
-        default="244x244",
-        help="Set resolution of images as ResXxResY.",
-    )
-    # TODO: add a check for valid quality values
-    arg_parser.add_argument(
-        "--quality",
-        type=str,
-        default="1",
-        help="Set quality of images in the range 1 to 4.",
-    )
-    arg_parser.add_argument(
-        "--image_ext", type=str, default="png", help="Output format for images"
-    )
-    arg_parser.add_argument(
-        "--randomize_interval",
-        type=int,
-        default=inf,
-        help="Randomizes the texture of the walls, floors, and ceilings every N actions.",
-    )
+    add_box_navigator_arguments(arg_parser)
 
     return arg_parser.parse_args()
 
@@ -253,37 +193,42 @@ def main():
     initial_position = Pt(initial_x, initial_y)
     initial_rotation = radians(90)
 
+    # agent = BoxNavigator(
+    #     box_env,
+    #     initial_position,
+    #     initial_rotation,
+    #     args.distance_threshold,
+    #     args.direction_threshold,
+    #     args.translation_increment,
+    #     args.rotation_increment,
+    #     Navigator.VISION,
+    #     None,
+    #     args.ue,  # False, #args.ue,
+    #     args.py_port,
+    #     args.ue_port,
+    #     args.resolution,
+    #     args.quality,
+    #     args.output_dir,
+    #     args.image_ext,
+    #     args.randomize_interval,
+    #     vision_callback=partial(inference_func, model),
+    # )
+
+    # TODO: use context manager for UE connection?
     agent = BoxNavigator(
         box_env,
         initial_position,
         initial_rotation,
-        args.distance_threshold,
-        args.direction_threshold,
-        args.translation_increment,
-        args.rotation_increment,
-        Navigator.VISION,
-        None,
-        args.ue,  # False, #args.ue,
-        args.py_port,
-        args.ue_port,
-        args.resolution,
-        args.quality,
-        args.output_dir,
-        args.image_ext,
-        args.randomize_interval,
+        args,
         vision_callback=partial(inference_func, model),
     )
 
     for _ in range(args.max_actions):
-        _ = agent.execute_next_action()
+        _ = agent.execute_navigator_action()
 
-        # Prevent agent from getting stuck and/or going out-of-bounds
         if agent.is_stuck():
             print("Agent is stuck.")
             break
-        # elif len(box_env.get_boxes_enclosing_point(agent.position)) == 0:
-        #     print("Agent is out of bounds.")
-        #     break
 
     if args.ue:
         agent.ue.close_osc()
