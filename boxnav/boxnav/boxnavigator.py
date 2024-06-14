@@ -387,10 +387,10 @@ class BoxNavigator:
             self.ue.save_image(self.latest_image_filepath, delay=0.25)
 
         # Randomize the texture of the walls, floors, and ceilings
-        randomize = self.num_actions_executed != 0 and self.randomize_interval != inf
-        if self.sync_with_ue and randomize:
-            random_surface = choice(list(TexturedSurface))
-            self.ue.set_texture(random_surface, randrange(NUM_TEXTURES))
+        if self.sync_with_ue:
+            if self.num_actions_executed != 0 and self.randomize_interval != inf:
+                random_surface = choice(list(TexturedSurface))
+                self.ue.set_texture(random_surface, randrange(NUM_TEXTURES))
 
         # Loop until we have executed an action or until "stuck"
         while True:
