@@ -168,13 +168,6 @@ def main():
 
     box_env = BoxEnv(boxes)
 
-    # TODO: for Kellie
-    # I like your idea of creating a new navigator that uses the fastai model
-    # Can you use navigator.stuck?
-    # Can use this to check for out of bounds
-    # temp_pt = Pt(0, 0)
-    # box_env.get_boxes_enclosing_point(temp_pt)
-
     starting_box = boxes[0]
     initial_x = starting_box.left + starting_box.width / 2
     initial_y = starting_box.lower + 50
