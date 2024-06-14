@@ -412,6 +412,7 @@ class BoxNavigator:
 
         # Execute the action
         self.execute_action(action_navigator)
+        print("Action taken: ", action_navigator)
 
         self.previous_action = action_navigator
         return action_navigator, action_correct
@@ -501,12 +502,7 @@ class BoxNavigator:
         # rotations to be clockwise.
         elif signed_angle_to_target < 0:
             action = Action.ROTATE_LEFT
-
         else:
-            print(
-                "Rotate right, angle between target: ",
-                degrees(self.signed_angle_to_target),
-            )
             action = Action.ROTATE_RIGHT
 
         return action

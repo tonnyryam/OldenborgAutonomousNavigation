@@ -47,9 +47,6 @@ def inference_func(model, previous_action: Action, image_file: str):
     action_to_take, action_index, action_probs = model.predict(image_file)
     action_prob = action_probs[action_index]
 
-    # print(action_probs)
-    # print("first argsort: ", action_probs.argsort())
-
     # Translate Action to string
     previous = ""
     match previous_action:
@@ -63,23 +60,10 @@ def inference_func(model, previous_action: Action, image_file: str):
     # Prevent cycling actions (e.g., left followed by right)
     # TODO: need to receive previous action
     if action_to_take == "left" and previous == "right":
-        # print("Enter first if, action_prob before: ", action_prob)
-        # print("Enter first if, new argsort: ", action_probs[action_probs.argsort()[1]])
-        # action_prob = action_probs.argsort()[1]
-        # print("action_prob after: ", action_prob)
-
-        # print("\t1. if statement, want to take: ", action_prob)
-        # print("\t", action_probs)
         action_prob = action_probs[action_probs.argsort()[1]]
         action_to_take = model.dls.vocab[action_probs.argsort()[1]]
 
     elif action_to_take == "right" and previous == "left":
-        # print("Enter second if")
-        # action_prob = action_probs.argsort()[1]
-        # action_to_take = model.dls.vocab[action_probs.argsort()[1]]
-
-        # print("\t2. if statement, want to take: ", action_prob)
-        # print("\t", action_probs)
         action_prob = action_probs[action_probs.argsort()[1]]
         action_to_take = model.dls.vocab[action_probs.argsort()[1]]
 
@@ -90,7 +74,6 @@ def inference_func(model, previous_action: Action, image_file: str):
     match action_to_take:
         case "forward":
             take_action = Action.FORWARD
-            # print("\tInference - set take action", take_action)
         case "left":
             take_action = Action.ROTATE_LEFT
         case "right":
@@ -99,7 +82,6 @@ def inference_func(model, previous_action: Action, image_file: str):
             raise ValueError(f"Unknown action: {action_to_take}")
 
     return take_action
-    # return Action.FORWARD
 
 
 def parse_args():
@@ -197,27 +179,6 @@ def main():
     initial_position = Pt(initial_x, initial_y)
     initial_rotation = radians(90)
 
-    # agent = BoxNavigator(
-    #     box_env,
-    #     initial_position,
-    #     initial_rotation,
-    #     args.distance_threshold,
-    #     args.direction_threshold,
-    #     args.translation_increment,
-    #     args.rotation_increment,
-    #     Navigator.VISION,
-    #     None,
-    #     args.ue,  # False, #args.ue,
-    #     args.py_port,
-    #     args.ue_port,
-    #     args.resolution,
-    #     args.quality,
-    #     args.output_dir,
-    #     args.image_ext,
-    #     args.randomize_interval,
-    #     vision_callback=partial(inference_func, model),
-    # )
-
     # TODO: use context manager for UE connection?
     agent = BoxNavigator(
         box_env,
@@ -234,50 +195,13 @@ def main():
             print("Agent is stuck.")
             break
 
-    if args.ue:
-        agent.ue.close_osc()
+        # Navigation progress is based on the percentage of the environment navigated
+        navigation_pbar.count = int(agent.get_percent_through_env())
+        navigation_pbar.update()
 
-    print("Simulation complete.")
-
-    # with Communicator("127.0.0.1", ue_port=7447, py_port=7001) as ue:
-    #     print("Connected to", ue.get_project_name())
-    #     print("Saving images to", output_dir)
-    #     ue.reset()
-
-    #     previous_action = ""
-    #     for action_step in range(args.max_actions):
-    #         # Save image
-    #         image_filename = f"{output_dir}/{action_step:04}.png"
-    #         ue.save_image(image_filename)
-    #         sleep(0.5)
-
-    #         # Predict correct action
-    #         action_to_take, action_index, action_probs = model.predict(image_filename)
-    #         action_prob = action_probs[action_index]
-
-    #         # Prevent cycling actions (e.g., left followed by right)
-    #         if action_to_take == "left" and previous_action == "right":
-    #             action_prob = action_probs.argsort()[1]
-    #             action_to_take = model.dls.vocab[action_probs.argsort()[1]]
-    #         elif action_to_take == "right" and previous_action == "left":
-    #             action_prob = action_probs.argsort()[1]
-    #             action_to_take = model.dls.vocab[action_probs.argsort()[1]]
-
-    #         # set previous_action
-    #         previous_action = action_to_take
-
-    #         print(f"Moving {action_to_take} with probabilities {action_prob:.2f}")
-
-    #         # Take action
-    #         match action_to_take:
-    #             case "forward":
-    #                 ue.move_forward(args.movement_amount)
-    #             case "left":
-    #                 ue.rotate_left(args.rotation_amount)
-    #             case "right":
-    #                 ue.rotate_right(args.rotation_amount)
-    #             case _:
-    #                 raise ValueError(f"Unknown action: {action_to_take}")
+    agent.ue.close_osc()
+    navigation_pbar.close()
+    pbar_manager.stop()
 
 
 if __name__ == "__main__":
