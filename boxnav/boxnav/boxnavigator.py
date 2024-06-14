@@ -437,7 +437,7 @@ class BoxNavigator:
 
     def __sync_ue_position(self) -> None:
         try:
-            self.ue.set_location_xy(self.position.x, self.position.y)
+            self.ue.set_location_xy(self.position.x, self.position.y, 0)
 
         except TimeoutError:
             self.ue.close_osc()
