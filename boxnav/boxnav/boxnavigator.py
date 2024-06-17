@@ -260,7 +260,7 @@ class BoxNavigator:
         self.num_resets = 0
         self.trial_num = 0
 
-        self.previous_action = Action.NO_ACTION
+        self.image_delay = 1
 
         # All other member variables are initialized in reset()
         self.reset()
@@ -384,7 +384,8 @@ class BoxNavigator:
             self.images_saved += 1
             self.latest_image_filepath = f"{self.image_directory}/{self.trial_num:03}_{self.images_saved:06}_{angle}.{self.image_extension}"
 
-            self.ue.save_image(self.latest_image_filepath, delay=0.4)
+            self.ue.save_image(self.latest_image_filepath, delay=self.image_delay)
+            self.image_delay = 0.25
 
         # Randomize the texture of the walls, floors, and ceilings
         if self.sync_with_ue:
