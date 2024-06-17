@@ -155,7 +155,7 @@ def get_dls(args: Namespace, data_paths: list):
         )
     else:
         return ImageDataLoaders.from_name_func(
-            data_paths[0],
+            data_paths[0],  # TODO: find a better place to save models
             image_filenames,
             label_func,
             valid_pct=args.valid_pct,
