@@ -384,7 +384,7 @@ class BoxNavigator:
             self.images_saved += 1
             self.latest_image_filepath = f"{self.image_directory}/{self.trial_num:03}_{self.images_saved:06}_{angle}.{self.image_extension}"
 
-            self.ue.save_image(self.latest_image_filepath, delay=0.25)
+            self.ue.save_image(self.latest_image_filepath, delay=0.4)
 
         # Randomize the texture of the walls, floors, and ceilings
         if self.sync_with_ue:
@@ -438,7 +438,7 @@ class BoxNavigator:
 
     def __sync_ue_position(self) -> None:
         try:
-            self.ue.set_location_xy(self.position.x, self.position.y, delay=0)
+            self.ue.set_location_xy(self.position.x, self.position.y, delay=0.1)
 
         except TimeoutError:
             self.ue.close_osc()
