@@ -218,7 +218,10 @@ def main():
                 print(e)
                 break
 
-            if agent.is_stuck():
+            if agent.get_percent_through_env() >= 99.0:
+                print("Agent reached final target")
+                break
+            elif agent.is_stuck():
                 print("Agent is stuck.")
                 break
 

@@ -294,6 +294,9 @@ class BoxNavigator:
                 print("Check if UE packaged game is running.")
                 raise SystemExit
 
+            # Reset z coordinates
+            self.ue.reset(1)
+
             self.__sync_ue_rotation()
             self.__sync_ue_position()
 
