@@ -50,28 +50,29 @@ fastai_to_boxnav = {
     "forward": Action.FORWARD,
 }
 
+action_prev = Action.NO_ACTION
 
-def inference_func(model, previous_action: Action, image_file: str):
-    # Predict correct action
-    action_to_take, action_index, action_probs = model.predict(image_file)
-    action_prob = action_probs[action_index]
 
-    action_to_take = fastai_to_boxnav[action_to_take]
+def inference_func(model, image_file: str):
+    global action_prev
+
+    action_now, action_index, action_probs = model.predict(image_file)
+
+    action_now = fastai_to_boxnav[action_now]
 
     # Prevent cycling actions (e.g., left followed by right)
-    # TODO: need to receive previous action
-    if (
-        action_to_take == Action.ROTATE_LEFT and previous_action == Action.ROTATE_RIGHT
-    ) or (
-        action_to_take == Action.ROTATE_RIGHT and previous_action == Action.ROTATE_LEFT
-    ):
-        # action_prob = action_probs[action_probs.argsort()[1]]
-        action_to_take = fastai_to_boxnav[model.dls.vocab[action_probs.argsort()[1]]]
+    right_left = action_now == Action.ROTATE_LEFT and action_prev == Action.ROTATE_RIGHT
+    left_right = action_now == Action.ROTATE_RIGHT and action_prev == Action.ROTATE_LEFT
+    if right_left or left_right:
+        action_index = action_probs.argsort()[1]
+        action_now = fastai_to_boxnav[model.dls.vocab[action_index]]
 
     # TODO: Maybe log with loguru
+    # action_prob = action_probs[action_index]
     # print(f"Moving {action_to_take} with probability {action_prob:.2f}")
 
-    return action_to_take
+    action_prev = action_now
+    return action_now
 
 
 def parse_args():

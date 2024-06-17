@@ -415,7 +415,6 @@ class BoxNavigator:
         self.execute_action(action_navigator)
         print("Action taken: ", action_navigator)
 
-        self.previous_action = action_navigator
         return action_navigator, action_correct
 
     def __move_is_possible(self, action: Action) -> bool:
@@ -520,7 +519,7 @@ class BoxNavigator:
         # - number of resets
         # - number of actions executed
         # - ...
-        return self.vision_callback(self.previous_action, self.latest_image_filepath)
+        return self.vision_callback(self.latest_image_filepath)
 
     def __update_target_if_necessary(self) -> None:
         assert not self.at_final_target(), "Already at final target."
