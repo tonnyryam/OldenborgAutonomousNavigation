@@ -87,7 +87,7 @@ def parse_args():
     arg_parser.add_argument("output_dir", help="Directory to store saved images.")
 
     arg_parser.add_argument(
-        "--num_runs",
+        "--num_trials",
         type=int,
         default=1,
         help="Number of times to run model through environment",
@@ -182,7 +182,7 @@ def main():
 
     inference_data = []
 
-    for _ in range(args.num_runs):
+    for _ in range(args.num_trials):
         total_actions_taken, correct_action_taken = 0, 0
         forward_count, rotate_left_count, rotate_right_count = 0, 0, 0
         incorrect_left_count, incorrect_right_count = 0, 0
