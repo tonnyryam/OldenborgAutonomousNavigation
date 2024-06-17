@@ -59,8 +59,6 @@ for action in action_sequence:
     print(f"BoxNav rotation: {agent.rotation:0.03}")
     print(f"Unreal rotation: {radians(agent.ue.get_rotation()[2]):0.03}")
 
-    sleep(0.1)
-
 
 agent.ue.close_osc()
 
