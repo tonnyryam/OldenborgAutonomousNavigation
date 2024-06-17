@@ -179,7 +179,6 @@ def main():
     )
 
     pbar_manager = enlighten.get_manager()
-    navigation_pbar = pbar_manager.counter(total=100, desc="Completion")
 
     inference_data = []
 
@@ -187,6 +186,8 @@ def main():
         total_actions_taken, correct_action_taken = 0, 0
         forward_count, rotate_left_count, rotate_right_count = 0, 0, 0
         incorrect_left_count, incorrect_right_count = 0, 0
+
+        navigation_pbar = pbar_manager.counter(total=100, desc="Completion")
 
         for _ in range(args.max_actions):
             try:
@@ -238,9 +239,9 @@ def main():
         inference_data.append(run_data)
 
         agent.reset()
+        navigation_pbar.close()
 
     agent.ue.close_osc()
-    navigation_pbar.close()
     pbar_manager.stop()
 
     # Implement new table
