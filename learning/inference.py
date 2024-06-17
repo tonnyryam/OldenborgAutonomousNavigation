@@ -181,17 +181,29 @@ def main():
     pbar_manager = enlighten.get_manager()
     navigation_pbar = pbar_manager.counter(total=100, desc="Completion")
 
-    total_actions_taken, corect_action_taken = 0, 0
-    forward_count, rotate_left_count, rotate_right_count = 0, 0, 0
-
     inference_data = []
+
     for _ in range(args.num_runs):
+        total_actions_taken, correct_action_taken = 0, 0
+        forward_count, rotate_left_count, rotate_right_count = 0, 0, 0
+        incorrect_left_count, incorrect_right_count = 0, 0
+
         for _ in range(args.max_actions):
             try:
                 executed_action, correct_action = agent.execute_navigator_action()
 
                 total_actions_taken += 1
-                corect_action_taken += 1 if executed_action == correct_action else 0
+                correct_action_taken += 1 if executed_action == correct_action else 0
+                if (
+                    executed_action == Action.ROTATE_LEFT
+                    and correct_action == Action.ROTATE_RIGHT
+                ):
+                    incorrect_left_count += 1
+                elif (
+                    executed_action == Action.ROTATE_RIGHT
+                    and correct_action == Action.ROTATE_LEFT
+                ):
+                    incorrect_right_count += 1
 
                 match executed_action:
                     case Action.FORWARD:
@@ -214,12 +226,14 @@ def main():
             navigation_pbar.update()
 
         run_data = [
-            agent.get_percent_through_env,
+            agent.get_percent_through_env(),
             total_actions_taken,
-            corect_action_taken,
+            correct_action_taken,
             forward_count,
             rotate_left_count,
             rotate_right_count,
+            incorrect_left_count,
+            incorrect_right_count,
         ]
         inference_data.append(run_data)
 
@@ -236,7 +250,9 @@ def main():
         "Correct Actions Taken",
         "Forward Action Taken",
         "Rotate Left Action Taken",
-        "Right Action Taken",
+        "Rotate Right Action Taken",
+        "Incorrect Left Taken",
+        "Incorrect Right Taken",
     ]
     inference_data_table = wandb.Table(columns=table_cols, data=inference_data)
     run.log({"Inference Data": inference_data_table})
