@@ -243,9 +243,12 @@ def train_model(dls: DataLoaders, args: Namespace, run, rep: int):
 
     wandb_name = args.wandb_name
     model_arch = args.model_arch
-    dataset_name = args.dataset_name
+    if isinstance(args.dataset_names, str):
+        dataset_names = args.dataset_names
+    else:
+        dataset_names = "-".join(args.dataset_names)
 
-    learn_name = f"{wandb_name}-{model_arch}-{dataset_name}-rep{rep:02}"
+    learn_name = f"{wandb_name}-{model_arch}-{dataset_names}-rep{rep:02}"
     learn_filename = learn_name + ".pkl"
     learn.export(learn_filename)
 
