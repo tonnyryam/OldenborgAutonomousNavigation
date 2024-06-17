@@ -5,7 +5,12 @@ from time import sleep
 
 from boxnav.box import Pt
 from boxnav.boxenv import BoxEnv
-from boxnav.boxnavigator import Action, BoxNavigator, add_box_navigator_arguments
+from boxnav.boxnavigator import (
+    Action,
+    BoxNavigator,
+    Navigator,
+    add_box_navigator_arguments,
+)
 from boxnav.environments import oldenborg_boxes as boxes
 
 box_env = BoxEnv(boxes)
@@ -20,6 +25,12 @@ initial_rotation = radians(90)
 argparser = ArgumentParser("Navigate around a box environment.")
 
 add_box_navigator_arguments(argparser)
+argparser.add_argument(
+    "navigator",
+    type=Navigator.argparse,
+    choices=list(Navigator),
+    help="Navigator to run.",
+)
 argparser.add_argument("delay", type=float, help="Delay between actions.")
 
 argv.append("--ue")
