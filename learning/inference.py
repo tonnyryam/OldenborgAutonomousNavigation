@@ -184,6 +184,7 @@ def main():
     total_actions_taken, corect_action_taken = 0, 0
     forward_count, rotate_left_count, rotate_right_count = 0, 0, 0
 
+    inference_data = []
     for _ in range(args.num_runs):
         for _ in range(args.max_actions):
             try:
@@ -212,7 +213,7 @@ def main():
             navigation_pbar.count = int(agent.get_percent_through_env())
             navigation_pbar.update()
 
-        inference_data = [
+        run_data = [
             agent.get_percent_through_env,
             total_actions_taken,
             corect_action_taken,
@@ -220,6 +221,7 @@ def main():
             rotate_left_count,
             rotate_right_count,
         ]
+        inference_data.append(run_data)
 
         agent.reset()
 
