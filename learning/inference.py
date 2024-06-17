@@ -44,46 +44,34 @@ def check_path(directory: str) -> None:
         raise ValueError(f"Directory {path} is not empty.")
 
 
+fastai_to_boxnav = {
+    "left": Action.ROTATE_LEFT,
+    "right": Action.ROTATE_RIGHT,
+    "forward": Action.FORWARD,
+}
+
+
 def inference_func(model, previous_action: Action, image_file: str):
     # Predict correct action
     action_to_take, action_index, action_probs = model.predict(image_file)
     action_prob = action_probs[action_index]
 
-    # Translate Action to string
-    previous = ""
-    match previous_action:
-        case Action.ROTATE_LEFT:
-            previous = "left"
-        case Action.ROTATE_RIGHT:
-            previous = "right"
-        case Action.FORWARD:
-            previous = "forward"
+    action_to_take = fastai_to_boxnav[action_to_take]
 
     # Prevent cycling actions (e.g., left followed by right)
     # TODO: need to receive previous action
-    if action_to_take == "left" and previous == "right":
-        action_prob = action_probs[action_probs.argsort()[1]]
-        action_to_take = model.dls.vocab[action_probs.argsort()[1]]
+    if (
+        action_to_take == Action.ROTATE_LEFT and previous_action == Action.ROTATE_RIGHT
+    ) or (
+        action_to_take == Action.ROTATE_RIGHT and previous_action == Action.ROTATE_LEFT
+    ):
+        # action_prob = action_probs[action_probs.argsort()[1]]
+        action_to_take = fastai_to_boxnav[model.dls.vocab[action_probs.argsort()[1]]]
 
-    elif action_to_take == "right" and previous == "left":
-        action_prob = action_probs[action_probs.argsort()[1]]
-        action_to_take = model.dls.vocab[action_probs.argsort()[1]]
-
+    # TODO: Maybe log with loguru
     # print(f"Moving {action_to_take} with probability {action_prob:.2f}")
 
-    # Translate fast.ai action to an Action object
-    take_action = Action.NO_ACTION
-    match action_to_take:
-        case "forward":
-            take_action = Action.FORWARD
-        case "left":
-            take_action = Action.ROTATE_LEFT
-        case "right":
-            take_action = Action.ROTATE_RIGHT
-        case _:
-            raise ValueError(f"Unknown action: {action_to_take}")
-
-    return take_action
+    return action_to_take
 
 
 def parse_args():
