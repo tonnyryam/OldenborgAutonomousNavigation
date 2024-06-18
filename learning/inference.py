@@ -239,12 +239,12 @@ def main():
     #     print("Saving images to", output_dir)
     #     ue.reset()
 
-        previous_action = ""
-        for action_step in range(args.max_actions):
-            # Save image
-            image_filename = f"{output_dir}/{action_step:04}.png"
-            ue.save_image(image_filename)
-            sleep(0.5)
+    # previous_action = ""
+    # for action_step in range(args.max_actions):
+    #     # Save image
+    #     image_filename = f"{output_dir}/{action_step:04}.png"
+    #     ue.save_image(image_filename)
+    #     sleep(0.5)
 
     #         # Predict correct action
     #         action_to_take, action_index, action_probs = model.predict(image_filename)
@@ -263,16 +263,16 @@ def main():
 
     #         print(f"Moving {action_to_take} with probabilities {action_prob:.2f}")
 
-            # Take action
-            match action_to_take:
-                case "forward":
-                    ue.move_forward(args.movement_amount)
-                case "left":
-                    ue.rotate_left(args.rotation_amount)
-                case "right":
-                    ue.rotate_right(args.rotation_amount)
-                case _:
-                    raise ValueError(f"Unknown action: {action_to_take}")
+    # Take action
+    # match action_to_take:
+    #     case "forward":
+    #         ue.move_forward(args.movement_amount)
+    #     case "left":
+    #         ue.rotate_left(args.rotation_amount)
+    #     case "right":
+    #         ue.rotate_right(args.rotation_amount)
+    #     case _:
+    #         raise ValueError(f"Unknown action: {action_to_take}")
 
 
 if __name__ == "__main__":
