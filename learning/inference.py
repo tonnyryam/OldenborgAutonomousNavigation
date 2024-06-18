@@ -6,6 +6,8 @@ from functools import partial
 from math import radians
 from pathlib import Path
 
+import enlighten
+
 import wandb
 from fastai.callback.wandb import WandbCallback
 from fastai.vision.learner import load_learner
@@ -44,64 +46,35 @@ def check_path(directory: str) -> None:
         raise ValueError(f"Directory {path} is not empty.")
 
 
-def inference_func(model, previous_action: Action, image_file: str):
-    # Predict correct action
-    action_to_take, action_index, action_probs = model.predict(image_file)
-    action_prob = action_probs[action_index]
+fastai_to_boxnav = {
+    "left": Action.ROTATE_LEFT,
+    "right": Action.ROTATE_RIGHT,
+    "forward": Action.FORWARD,
+}
 
-    # print(action_probs)
-    # print("first argsort: ", action_probs.argsort())
+action_prev = Action.NO_ACTION
 
-    # Translate Action to string
-    previous = ""
-    match previous_action:
-        case Action.ROTATE_LEFT:
-            previous = "left"
-        case Action.ROTATE_RIGHT:
-            previous = "right"
-        case Action.FORWARD:
-            previous = "forward"
+
+def inference_func(model, image_file: str):
+    global action_prev
+
+    action_now, action_index, action_probs = model.predict(image_file)
+
+    action_now = fastai_to_boxnav[action_now]
 
     # Prevent cycling actions (e.g., left followed by right)
-    # TODO: need to receive previous action
-    if action_to_take == "left" and previous == "right":
-        # print("Enter first if, action_prob before: ", action_prob)
-        # print("Enter first if, new argsort: ", action_probs[action_probs.argsort()[1]])
-        # action_prob = action_probs.argsort()[1]
-        # print("action_prob after: ", action_prob)
+    right_left = action_now == Action.ROTATE_LEFT and action_prev == Action.ROTATE_RIGHT
+    left_right = action_now == Action.ROTATE_RIGHT and action_prev == Action.ROTATE_LEFT
+    if right_left or left_right:
+        action_index = action_probs.argsort()[1]
+        action_now = fastai_to_boxnav[model.dls.vocab[action_index]]
 
-        # print("\t1. if statement, want to take: ", action_prob)
-        # print("\t", action_probs)
-        action_prob = action_probs[action_probs.argsort()[1]]
-        action_to_take = model.dls.vocab[action_probs.argsort()[1]]
-
-    elif action_to_take == "right" and previous == "left":
-        # print("Enter second if")
-        # action_prob = action_probs.argsort()[1]
-        # action_to_take = model.dls.vocab[action_probs.argsort()[1]]
-
-        # print("\t2. if statement, want to take: ", action_prob)
-        # print("\t", action_probs)
-        action_prob = action_probs[action_probs.argsort()[1]]
-        action_to_take = model.dls.vocab[action_probs.argsort()[1]]
-
+    # TODO: Maybe log with loguru
+    # action_prob = action_probs[action_index]
     # print(f"Moving {action_to_take} with probability {action_prob:.2f}")
 
-    # Translate fast.ai action to an Action object
-    take_action = Action.NO_ACTION
-    match action_to_take:
-        case "forward":
-            take_action = Action.FORWARD
-            # print("\tInference - set take action", take_action)
-        case "left":
-            take_action = Action.ROTATE_LEFT
-        case "right":
-            take_action = Action.ROTATE_RIGHT
-        case _:
-            raise ValueError(f"Unknown action: {action_to_take}")
-
-    return take_action
-    # return Action.FORWARD
+    action_prev = action_now
+    return action_now
 
 
 def parse_args():
@@ -116,6 +89,12 @@ def parse_args():
     arg_parser.add_argument("output_dir", help="Directory to store saved images.")
 
     arg_parser.add_argument(
+        "--num_trials",
+        type=int,
+        default=1,
+        help="Number of times to run model through environment",
+    )
+    arg_parser.add_argument(
         "--max_actions",
         type=int,
         default=10,
@@ -126,6 +105,10 @@ def parse_args():
 
 def main():
     args = parse_args()
+
+    args.navigator = Navigator.VISION
+    args.ue = True
+    args.image_directory = args.output_dir
 
     wandb_entity = "arcslaboratory"
     wandb_project = args.wandb_project
@@ -179,39 +162,11 @@ def main():
 
     box_env = BoxEnv(boxes)
 
-    # TODO: for Kellie
-    # I like your idea of creating a new navigator that uses the fastai model
-    # Can you use navigator.stuck?
-    # Can use this to check for out of bounds
-    # temp_pt = Pt(0, 0)
-    # box_env.get_boxes_enclosing_point(temp_pt)
-
     starting_box = boxes[0]
     initial_x = starting_box.left + starting_box.width / 2
     initial_y = starting_box.lower + 50
     initial_position = Pt(initial_x, initial_y)
     initial_rotation = radians(90)
-
-    # agent = BoxNavigator(
-    #     box_env,
-    #     initial_position,
-    #     initial_rotation,
-    #     args.distance_threshold,
-    #     args.direction_threshold,
-    #     args.translation_increment,
-    #     args.rotation_increment,
-    #     Navigator.VISION,
-    #     None,
-    #     args.ue,  # False, #args.ue,
-    #     args.py_port,
-    #     args.ue_port,
-    #     args.resolution,
-    #     args.quality,
-    #     args.output_dir,
-    #     args.image_ext,
-    #     args.randomize_interval,
-    #     vision_callback=partial(inference_func, model),
-    # )
 
     # TODO: use context manager for UE connection?
     agent = BoxNavigator(
@@ -222,57 +177,96 @@ def main():
         vision_callback=partial(inference_func, model),
     )
 
-    for _ in range(args.max_actions):
-        _ = agent.execute_navigator_action()
+    pbar_manager = enlighten.get_manager()
+    trials_pbar = pbar_manager.counter(total=args.num_trials, desc="Trials: ")
 
-        if agent.is_stuck():
-            print("Agent is stuck.")
-            break
+    inference_data = []
 
-    if args.ue:
-        agent.ue.close_osc()
+    for _ in range(args.num_trials):
+        total_actions_taken, correct_action_taken = 0, 0
+        forward_count, rotate_left_count, rotate_right_count = 0, 0, 0
+        incorrect_left_count, incorrect_right_count = 0, 0
 
-    print("Simulation complete.")
+        actions_pbar = pbar_manager.counter(total=args.max_actions, desc="Actions: ")
+        navigation_pbar = pbar_manager.counter(total=100, desc="Completion: ")
 
-    # with Communicator("127.0.0.1", ue_port=7447, py_port=7001) as ue:
-    #     print("Connected to", ue.get_project_name())
-    #     print("Saving images to", output_dir)
-    #     ue.reset()
+        for _ in range(args.max_actions):
+            try:
+                executed_action, correct_action = agent.execute_navigator_action()
 
-    # previous_action = ""
-    # for action_step in range(args.max_actions):
-    #     # Save image
-    #     image_filename = f"{output_dir}/{action_step:04}.png"
-    #     ue.save_image(image_filename)
-    #     sleep(0.5)
+            except Exception as e:
+                print(e)
+                break
 
-    #         # Predict correct action
-    #         action_to_take, action_index, action_probs = model.predict(image_filename)
-    #         action_prob = action_probs[action_index]
+            total_actions_taken += 1
+            correct_action_taken += 1 if executed_action == correct_action else 0
+            if (
+                executed_action == Action.ROTATE_LEFT
+                and correct_action == Action.ROTATE_RIGHT
+            ):
+                incorrect_left_count += 1
+            elif (
+                executed_action == Action.ROTATE_RIGHT
+                and correct_action == Action.ROTATE_LEFT
+            ):
+                incorrect_right_count += 1
 
-    #         # Prevent cycling actions (e.g., left followed by right)
-    #         if action_to_take == "left" and previous_action == "right":
-    #             action_prob = action_probs.argsort()[1]
-    #             action_to_take = model.dls.vocab[action_probs.argsort()[1]]
-    #         elif action_to_take == "right" and previous_action == "left":
-    #             action_prob = action_probs.argsort()[1]
-    #             action_to_take = model.dls.vocab[action_probs.argsort()[1]]
+            match executed_action:
+                case Action.FORWARD:
+                    forward_count += 1
+                case Action.ROTATE_LEFT:
+                    rotate_left_count += 1
+                case Action.ROTATE_RIGHT:
+                    rotate_right_count += 1
 
-    #         # set previous_action
-    #         previous_action = action_to_take
+            if agent.get_percent_through_env() >= 99.0:
+                print("Agent reached final target.")
+                break
 
-    #         print(f"Moving {action_to_take} with probabilities {action_prob:.2f}")
+            elif agent.is_stuck():
+                print("Agent is stuck.")
+                break
 
-    # Take action
-    # match action_to_take:
-    #     case "forward":
-    #         ue.move_forward(args.movement_amount)
-    #     case "left":
-    #         ue.rotate_left(args.rotation_amount)
-    #     case "right":
-    #         ue.rotate_right(args.rotation_amount)
-    #     case _:
-    #         raise ValueError(f"Unknown action: {action_to_take}")
+            actions_pbar.update()
+
+            # Navigation progress is based on the percentage of the environment navigated
+            navigation_pbar.count = int(agent.get_percent_through_env())
+            navigation_pbar.update()
+
+        run_data = [
+            agent.get_percent_through_env(),
+            total_actions_taken,
+            correct_action_taken,
+            forward_count,
+            rotate_left_count,
+            rotate_right_count,
+            incorrect_left_count,
+            incorrect_right_count,
+        ]
+        inference_data.append(run_data)
+
+        agent.reset()
+        trials_pbar.update()
+        actions_pbar.close()
+        navigation_pbar.close()
+
+    agent.ue.close_osc()
+    trials_pbar.close()
+    pbar_manager.stop()
+
+    # Implement new table
+    table_cols = [
+        "Percent through environment",
+        "Total Actions Taken",
+        "Correct Actions Taken",
+        "Forward Action Taken",
+        "Rotate Left Action Taken",
+        "Rotate Right Action Taken",
+        "Incorrect Left Taken",
+        "Incorrect Right Taken",
+    ]
+    inference_data_table = wandb.Table(columns=table_cols, data=inference_data)
+    run.log({"Inference Data": inference_data_table})
 
 
 if __name__ == "__main__":

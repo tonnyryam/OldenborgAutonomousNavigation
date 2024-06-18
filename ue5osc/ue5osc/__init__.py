@@ -69,15 +69,16 @@ class Communicator:
         """Returns x, y, z location of the player in the Unreal Environment."""
         return self.send_and_await("/get/location")
 
-    def set_location(self, x: float, y: float, z: float) -> None:
+    def set_location(self, x: float, y: float, z: float, delay: float = 0.0) -> None:
         """Sets X, Y, and Z values of an Unreal Camera."""
         self.client.send_message("/set/location", [x, y, z])
+        sleep(delay)
 
-    def set_location_xy(self, x: float, y: float) -> None:
+    def set_location_xy(self, x: float, y: float, delay: float = 0.0) -> None:
         """Sets X and Y values of an Unreal Camera. Z is taken from Unreal."""
         # TODO: add this functionality directly to UE
         _, _, unreal_z = self.get_location()
-        self.set_location(x, y, unreal_z)
+        self.set_location(x, y, unreal_z, delay)
 
     def get_rotation(self) -> tuple[float, float, float]:
         """Returns roll, pitch, and yaw in degrees."""
