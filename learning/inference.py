@@ -2,8 +2,9 @@ import pathlib
 import platform
 from argparse import ArgumentParser
 from contextlib import contextmanager
+from functools import partial
+from math import radians
 from pathlib import Path
-from time import sleep
 
 import wandb
 from fastai.callback.wandb import WandbCallback
@@ -14,8 +15,13 @@ import subprocess
 
 from boxnav.box import Pt
 from boxnav.boxenv import BoxEnv
+from boxnav.boxnavigator import (
+    Action,
+    BoxNavigator,
+    Navigator,
+    add_box_navigator_arguments,
+)
 from boxnav.environments import oldenborg_boxes as boxes
-from ue5osc import Communicator
 
 
 @contextmanager
@@ -29,6 +35,75 @@ def set_posix_windows():
         pathlib.PosixPath = posix_backup
 
 
+def check_path(directory: str) -> None:
+    path = Path(directory)
+    path.mkdir(parents=True, exist_ok=True)
+
+    # Check if directory is empty
+    if len(list(Path(path).iterdir())) != 0:
+        raise ValueError(f"Directory {path} is not empty.")
+
+
+def inference_func(model, previous_action: Action, image_file: str):
+    # Predict correct action
+    action_to_take, action_index, action_probs = model.predict(image_file)
+    action_prob = action_probs[action_index]
+
+    # print(action_probs)
+    # print("first argsort: ", action_probs.argsort())
+
+    # Translate Action to string
+    previous = ""
+    match previous_action:
+        case Action.ROTATE_LEFT:
+            previous = "left"
+        case Action.ROTATE_RIGHT:
+            previous = "right"
+        case Action.FORWARD:
+            previous = "forward"
+
+    # Prevent cycling actions (e.g., left followed by right)
+    # TODO: need to receive previous action
+    if action_to_take == "left" and previous == "right":
+        # print("Enter first if, action_prob before: ", action_prob)
+        # print("Enter first if, new argsort: ", action_probs[action_probs.argsort()[1]])
+        # action_prob = action_probs.argsort()[1]
+        # print("action_prob after: ", action_prob)
+
+        # print("\t1. if statement, want to take: ", action_prob)
+        # print("\t", action_probs)
+        action_prob = action_probs[action_probs.argsort()[1]]
+        action_to_take = model.dls.vocab[action_probs.argsort()[1]]
+
+    elif action_to_take == "right" and previous == "left":
+        # print("Enter second if")
+        # action_prob = action_probs.argsort()[1]
+        # action_to_take = model.dls.vocab[action_probs.argsort()[1]]
+
+        # print("\t2. if statement, want to take: ", action_prob)
+        # print("\t", action_probs)
+        action_prob = action_probs[action_probs.argsort()[1]]
+        action_to_take = model.dls.vocab[action_probs.argsort()[1]]
+
+    # print(f"Moving {action_to_take} with probability {action_prob:.2f}")
+
+    # Translate fast.ai action to an Action object
+    take_action = Action.NO_ACTION
+    match action_to_take:
+        case "forward":
+            take_action = Action.FORWARD
+            # print("\tInference - set take action", take_action)
+        case "left":
+            take_action = Action.ROTATE_LEFT
+        case "right":
+            take_action = Action.ROTATE_RIGHT
+        case _:
+            raise ValueError(f"Unknown action: {action_to_take}")
+
+    return take_action
+    # return Action.FORWARD
+
+
 def parse_args():
     arg_parser = ArgumentParser("Track performance of trained networks.")
 
@@ -39,26 +114,12 @@ def parse_args():
     arg_parser.add_argument("wandb_model", help="Path to the model to evaluate.")
 
     arg_parser.add_argument("output_dir", help="Directory to store saved images.")
-    arg_parser.add_argument(
-        "--movement_amount",
-        type=float,
-        default=120.0,
-        help="Movement forward per action.",
-    )
-    arg_parser.add_argument(
-        "--rotation_amount",
-        type=float,
-        default=10.0,
-        help="Rotation per action (in degrees for ue5osc).",
-    )
+
     arg_parser.add_argument(
         "--max_actions",
         type=int,
         default=10,
         help="Maximum number of actions to take.",
-    )
-    arg_parser.add_argument(
-        "--make_gif", type=bool, help="Makes a GIF from the images saved."
     )
     return arg_parser.parse_args()
 
@@ -108,51 +169,99 @@ def main():
         print("Output directory is not empty. Aborting.")
         return
 
+    if args.output_dir:
+        args.ue = True
+
+    if args.output_dir:
+        check_path(args.output_dir)
+
+    print("Starting inference.")
+
     box_env = BoxEnv(boxes)
 
     # TODO: for Kellie
     # I like your idea of creating a new navigator that uses the fastai model
     # Can you use navigator.stuck?
     # Can use this to check for out of bounds
-    temp_pt = Pt(0, 0)
-    box_env.get_boxes_enclosing_point(temp_pt)
+    # temp_pt = Pt(0, 0)
+    # box_env.get_boxes_enclosing_point(temp_pt)
 
-    # agent = InferenceNavigator_fastai()
-    # initial_position,
-    # initial_rotation,
-    # box_env,
-    # args.distance_threshold,
-    # args.movement_increment,
-    # args.rotation_increment,
+    starting_box = boxes[0]
+    initial_x = starting_box.left + starting_box.width / 2
+    initial_y = starting_box.lower + 50
+    initial_position = Pt(initial_x, initial_y)
+    initial_rotation = radians(90)
 
-    with Communicator("127.0.0.1", ue_port=7447, py_port=7001) as ue:
-        ue.reset()
-        print("Connected to", ue.get_project_name())
-        print("Saving images to", output_dir)
+    # agent = BoxNavigator(
+    #     box_env,
+    #     initial_position,
+    #     initial_rotation,
+    #     args.distance_threshold,
+    #     args.direction_threshold,
+    #     args.translation_increment,
+    #     args.rotation_increment,
+    #     Navigator.VISION,
+    #     None,
+    #     args.ue,  # False, #args.ue,
+    #     args.py_port,
+    #     args.ue_port,
+    #     args.resolution,
+    #     args.quality,
+    #     args.output_dir,
+    #     args.image_ext,
+    #     args.randomize_interval,
+    #     vision_callback=partial(inference_func, model),
+    # )
+
+    # TODO: use context manager for UE connection?
+    agent = BoxNavigator(
+        box_env,
+        initial_position,
+        initial_rotation,
+        args,
+        vision_callback=partial(inference_func, model),
+    )
+
+    for _ in range(args.max_actions):
+        _ = agent.execute_navigator_action()
+
+        if agent.is_stuck():
+            print("Agent is stuck.")
+            break
+
+    if args.ue:
+        agent.ue.close_osc()
+
+    print("Simulation complete.")
+
+    # with Communicator("127.0.0.1", ue_port=7447, py_port=7001) as ue:
+    #     print("Connected to", ue.get_project_name())
+    #     print("Saving images to", output_dir)
+    #     ue.reset()
 
         previous_action = ""
         for action_step in range(args.max_actions):
             # Save image
             image_filename = f"{output_dir}/{action_step:04}.png"
             ue.save_image(image_filename)
-            sleep(3)
+            sleep(0.5)
 
-            # Predict correct action
-            action_to_take, action_index, action_probs = model.predict(image_filename)
-            action_prob = action_probs[action_index]
+    #         # Predict correct action
+    #         action_to_take, action_index, action_probs = model.predict(image_filename)
+    #         action_prob = action_probs[action_index]
 
-            # Prevent cycling actions (e.g., left followed by right)
-            if action_to_take == "left" and previous_action == "right":
-                action_prob = action_probs.argsort()[1]
-                action_to_take = model.dls.vocab[action_probs.argsort()[1]]
-            elif action_to_take == "right" and previous_action == "left":
-                action_prob = action_probs.argsort()[1]
-                action_to_take = model.dls.vocab[action_probs.argsort()[1]]
+    #         # Prevent cycling actions (e.g., left followed by right)
+    #         if action_to_take == "left" and previous_action == "right":
+    #             action_prob = action_probs.argsort()[1]
+    #             action_to_take = model.dls.vocab[action_probs.argsort()[1]]
+    #         elif action_to_take == "right" and previous_action == "left":
+    #             action_prob = action_probs.argsort()[1]
+    #             action_to_take = model.dls.vocab[action_probs.argsort()[1]]
 
-            # set previous_action
-            previous_action = action_to_take
+    #         # set previous_action
+    #         previous_action = action_to_take
 
-            print(f"Moving {action_to_take} with probabilities {action_prob:.2f}")
+    #         print(f"Moving {action_to_take} with probabilities {action_prob:.2f}")
 
             # Take action
             match action_to_take:
@@ -164,12 +273,6 @@ def main():
                     ue.rotate_right(args.rotation_amount)
                 case _:
                     raise ValueError(f"Unknown action: {action_to_take}")
-    if args.make_gif:
-        subprocess.run(
-            [
-                "ffmpeg -framerate 1 -pattern_type glob -i 'output_dir' -c:v libx264 -pix_fmt yuv420p gif.mp4"
-            ]
-        )
 
 
 if __name__ == "__main__":

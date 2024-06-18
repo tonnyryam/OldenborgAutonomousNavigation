@@ -1,11 +1,11 @@
 import threading
+from enum import IntEnum
+from time import sleep
 
 from pythonosc import udp_client
 from pythonosc.osc_server import BlockingOSCUDPServer
 
 from ue5osc.osc_dispatcher import OSCMessageReceiver
-from enum import IntEnum
-from time import sleep
 
 
 class TexturedSurface(IntEnum):
@@ -80,15 +80,16 @@ class Communicator:
         self.set_location(x, y, unreal_z)
 
     def get_rotation(self) -> tuple[float, float, float]:
-        """Returns roll, pitch, and yaw."""
+        """Returns roll, pitch, and yaw in degrees."""
         return self.send_and_await("/get/rotation")
 
     def set_rotation(self, roll: float, pitch: float, yaw: float) -> None:
+        """Set rotation in degrees."""
         self.client.send_message("/set/rotation", [roll, pitch, yaw])
 
     def set_yaw(self, yaw: float) -> None:
-        """Set the robot's yaw in relation to the global coordinate frame."""
-        self.client.send_message("/set/yaw", yaw)
+        """Set the robot's yaw in degrees."""
+        self.client.send_message("/set/yaw", float(yaw))
 
     def move_forward(self, amount: float) -> None:
         """Move robot forward."""
@@ -106,16 +107,17 @@ class Communicator:
         """Rotate robot right."""
         self.client.send_message("/rotate/right", float(degree))
 
-    def set_resolution(self, resolution: str) -> None:
+    def set_resolution(self, resolution: str, delay: float = 0.0) -> None:
         """Allows you to set resolution of images in the form of ResXxResY."""
-        # TODO: need to delay after this message to allow for the resolution to change
         self.client.send_message("/set/resolution", resolution)
+        sleep(delay)
 
-    def save_image(self, filename: str) -> None:
+    def save_image(self, filename: str, delay: float = 0.0) -> None:
         """Takes screenshot with the default name."""
         # Unreal Engine Needs a forward / to separate folder from the filenames
         filename = "/".join(filename.rsplit("\\", 1))
         self.client.send_message("/save/image", str(filename))
+        sleep(delay)
 
     def console(self, message: str) -> None:
         """Sends Unreal Engine console commands (only works in development mode)."""
@@ -134,15 +136,14 @@ class Communicator:
         """Set the texture of walls/floors/ceilings to a different material"""
         self.client.send_message("/set/texture", [object, material])
 
-    def reset(self) -> None:
+    def reset(self, delay: float = 0.0) -> None:
         """Reset agent to the start location using a UE Blueprint command."""
         # The python OSC library send_message method always requires a value
         self.client.send_message("/reset", 0.0)
-        # TODO: add reasonable deafults
-        # quality
-        # self.set_quality(4)
+        sleep(delay)
+        # TODO: add reasonable defaults
+        # self.set_quality(2)
         # textures
         # self.set_texture(textureObject, 0.0)
         # aspect ratio
         # self.set_resolution("244x244")
-        # sleep(1)

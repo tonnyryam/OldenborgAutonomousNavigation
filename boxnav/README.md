@@ -68,7 +68,7 @@ Then to kick off the simulation you must first ensure the following steps are fo
 
 ### Note about Command Line Arguments
 
-The commands above showcase some examples as to how the script can be ran. Please look into the `boxsim.py` file for details over the arguments that can be passed.
+The commands above showcase some examples as to how the script can be ran. Please look into the `boxsim.py` and `boxnavigator.py` files for details over the arguments that can be passed. You can also run `python boxsim.py --help` to see the available arguments.
 
 ### Notes about Unreal Engine
 
@@ -83,9 +83,36 @@ PyPort=PY_PORT
 RobotVisible=ROBOT_VISIBLE
 ~~~
 
-### Other Notes
+### Coordinate Systems
 
-Right-handed coordinate system.
+BoxNav uses `matplotlib` to visualization the environment and agent. `matplotlib` uses a standard Cartesian coordinate system with the x-axis pointing right, the y-axis pointing up, and angles increasing when rotating **counter-clockwise** from +x (0°) to +y (90°).
 
-- Up-Down is y relative to Oldenborg
-- Left-right is x relative to Oldenborg
+Unreal Engine uses a left-handed coordinate system with the x-axis pointing left, the y-axis pointing up, and angles increasing when rotating **clockwise** from +x (0°) to +y (90°).
+
+<table>
+  <thead>
+    <tr> <th>Top-Down</th> <th colspan="2">BoxNav (Right-Handed)</th> <th colspan="2">UE (Left-Handed)</th>> <th>180 - BoxNav</th> </tr>
+  </thead>
+  <tbody>
+    <tr> <td>&nbsp;</td> <td>0 to 360</td> <td>-180 to 180</td> <td>0 to 360</td> <td>-180 to 180</td> <td>&nbsp;</td> </tr>
+    <tr> <td>West</td> <td>0</td> <td>0</td> <td>180</td> <td>180</td> <td>180</td> </tr>
+    <tr> <td>North-West</td> <td>45</td> <td>45</td> <td>135</td> <td>135</td> <td>135</td> </tr>
+    <tr> <td>North</td> <td>90</td> <td>90</td> <td>90</td> <td>90</td> <td>90</td> </tr>
+    <tr> <td>North-East</td> <td>135</td> <td>135</td> <td>45</td> <td>45</td> <td>45</td> </tr>
+    <tr> <td>East</td> <td>180</td> <td>180</td> <td>0</td> <td>0</td> <td>0</td> </tr>
+    <tr> <td>South-East</td> <td>225</td> <td>-135</td> <td>315</td> <td>-45</td> <td>-45</td> </tr>
+    <tr> <td>South</td> <td>270</td> <td>-90</td> <td>270</td> <td>-90</td> <td>-90</td> </tr>
+    <tr> <td>South-West</td> <td>315</td> <td>-45</td> <td>225</td> <td>-135</td> <td>-135</td> </tr>
+    <tr> <td>West</td> <td>360</td> <td>0</td> <td>180</td> <td>-180</td> <td>-180</td> </tr>
+  </tbody>
+</table>
+
+In our implementation we:
+
+- Sync the exact position and rotation between BoxNav and UE.
+- Use a clockwise rotation system (rotate left is negative).
+- Label positive rotations as "right" turns.
+- Call `axis.invert_xaxis()` to flip the x-axis in the animation.
+
+TODO:
+- add a figure

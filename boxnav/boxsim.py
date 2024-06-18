@@ -1,14 +1,14 @@
 from argparse import ArgumentParser, Namespace
-from math import inf, radians
+from math import radians
 from pathlib import Path
+from time import sleep
 
 import enlighten
 
 from boxnav.box import Pt
 from boxnav.boxenv import BoxEnv
-from boxnav.boxnavigator import BoxNavigator, Navigator
+from boxnav.boxnavigator import BoxNavigator, add_box_navigator_arguments
 from boxnav.environments import oldenborg_boxes as boxes
-from time import sleep
 
 
 def check_path(directory: str) -> None:
@@ -25,6 +25,7 @@ def simulate(args: Namespace) -> None:
 
     box_env = BoxEnv(boxes)
 
+    # TODO: move to constructor
     starting_box = boxes[0]
     initial_x = starting_box.left + starting_box.width / 2
     initial_y = starting_box.lower + 50
@@ -32,31 +33,14 @@ def simulate(args: Namespace) -> None:
     initial_rotation = radians(90)
 
     # TODO: use context manager for UE connection?
-    agent = BoxNavigator(
-        box_env,
-        initial_position,
-        initial_rotation,
-        args.distance_threshold,
-        args.direction_threshold,
-        args.translation_increment,
-        args.rotation_increment,
-        args.navigator,
-        args.anim_ext,
-        args.ue,
-        args.py_port,
-        args.ue_port,
-        args.resolution,
-        args.quality,
-        args.save_images,
-        args.image_ext,
-        args.randomize_interval,
-    )
+    agent = BoxNavigator(box_env, initial_position, initial_rotation, args)
 
-    manager = enlighten.get_manager()
-    progress_bar = manager.counter(total=args.max_total_actions, desc="   Actions")
-    env_completion = manager.counter(total=100, desc="Completion")
+    pbar_manager = enlighten.get_manager()
+    actions_pbar = pbar_manager.counter(total=args.max_total_actions, desc="   Actions")
+    navigation_pbar = pbar_manager.counter(total=100, desc="Completion")
 
     for _ in range(args.max_total_actions):
+        # Check for stopping conditions
         if agent.is_stuck() or agent.at_final_target():
             num_actions = agent.num_actions_executed
 
@@ -70,33 +54,50 @@ def simulate(args: Namespace) -> None:
 
             agent.reset()
 
-        _ = agent.execute_next_action()
-        progress_bar.update()
-        # print(str(agent.get_percent_through_env()) + "%")
-        env_completion.count = int(agent.get_percent_through_env())
-        env_completion.update()
-        sleep(0.1)
+        # We are not using the return value when generating a dataset
+        action_taken, _ = agent.execute_navigator_action()
+        print("Action taken:", action_taken)
+
+        actions_pbar.update()
+
+        # Navigation progress is based on the percentage of the environment navigated
+        navigation_pbar.count = int(agent.get_percent_through_env())
+        navigation_pbar.update()
+
+        sleep(0.5)
 
     if args.ue:
         agent.ue.close_osc()
 
+    navigation_pbar.close()
+    actions_pbar.close()
+
     print("Simulation complete.")
 
-    if args.anim_ext:
-        output_filename = None
+    if args.animation_extension:
+        # Generate a unique filename (don't overwrite previous animations)
         num = 1
-        while not output_filename or Path(output_filename).exists():
-            output_filename = f"output_{num}.{args.anim_ext}"
+        while True:
+            output_filename = f"output_{num:02}.{args.animation_extension}"
+
+            if not Path(output_filename).exists():
+                break
             num += 1
 
+        # The total number of animation frames depends on the number of actions taken
+        # We have two cases:
+        # 1. We completed all args.max_total_actions actions
+        # 2. We stopped early because we reached the final target (or got stuck) after one trial
         total_actions = args.max_total_actions
         if args.stop_after_one_trial:
             total_actions = agent.num_actions_executed
 
-        progress_bar = manager.counter(total=total_actions, desc="Frames")
-        print(f"Saving animation to {output_filename}...", end=" ", flush=True)
-        agent.save_animation(output_filename, lambda i, n: progress_bar.update())
-        print("done.")
+        animation_pbar = pbar_manager.counter(total=total_actions, desc="    Frames")
+        agent.save_animation(output_filename, lambda i, n: animation_pbar.update())
+        animation_pbar.close()
+        print(f"Animation saved to {output_filename}...", end=" ", flush=True)
+
+    pbar_manager.stop()
 
 
 def main():
@@ -104,59 +105,9 @@ def main():
 
     argparser = ArgumentParser("Navigate around a box environment.")
 
-    #
-    # Required arguments
-    #
+    add_box_navigator_arguments(argparser)
 
-    argparser.add_argument(
-        "navigator",
-        type=Navigator.argparse,
-        choices=list(Navigator),
-        help="Navigator to run.",
-    )
-
-    #
-    # Optional arguments
-    #
-
-    argparser.add_argument("--anim_ext", type=str, help="Output format for animation.")
-
-    argparser.add_argument(
-        "--save_images",
-        type=str,
-        help="Directory in which images should be saved (no images saved otherwise).",
-    )
-
-    argparser.add_argument(
-        "--ue", action="store_true", help="Connect and send command to Unreal Engine."
-    )
-
-    argparser.add_argument(
-        "--py_port", type=int, default=7001, help="Python OSC server port."
-    )
-
-    argparser.add_argument(
-        "--ue_port", type=int, default=7447, help="Unreal Engine OSC server port."
-    )
-
-    argparser.add_argument(
-        "--resolution",
-        type=str,
-        default="244x244",
-        help="Set resolution of images as ResXxResY.",
-    )
-
-    # TODO: add a check for valid quality values
-    argparser.add_argument(
-        "--quality",
-        type=str,
-        default="1",
-        help="Set quality of images in the range 1 to 4.",
-    )
-
-    argparser.add_argument(
-        "--image_ext", type=str, default="png", help="Output format for images"
-    )
+    # The following two arguments are specific to data generation
 
     argparser.add_argument(
         "--max_total_actions",
@@ -167,53 +118,17 @@ def main():
 
     argparser.add_argument(
         "--stop_after_one_trial",
-        type=bool,
-        default=False,
+        action="store_true",
         help="Stop after one time through the environment (for debugging).",
-    )
-
-    argparser.add_argument(
-        "--translation_increment",
-        type=float,
-        default=120.0,
-        help="Determines how far to move forward each step.",
-    )
-
-    argparser.add_argument(
-        "--rotation_increment",
-        type=float,
-        default=radians(10),
-        help="Determines how much to rotate by for each step.",
-    )
-
-    argparser.add_argument(
-        "--distance_threshold",
-        type=int,
-        default=75,
-        help="Determines how close the robot has to be to the target to activate the next one.",
-    )
-
-    argparser.add_argument(
-        "--direction_threshold",
-        type=int,
-        default=radians(12),
-        help="Determines how close the robot has to be to the target to activate the next one.",
-    )
-
-    argparser.add_argument(
-        "--randomize_interval",
-        type=int,
-        default=inf,
-        help="Randomizes the texture of the walls, floors, and ceilings every N actions.",
     )
 
     args = argparser.parse_args()
 
-    if args.save_images:
+    if args.image_directory:
         args.ue = True
 
-    if args.save_images:
-        check_path(args.save_images)
+    if args.image_directory:
+        check_path(args.image_directory)
 
     print("Starting simulation.")
     simulate(args)
