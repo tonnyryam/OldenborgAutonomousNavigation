@@ -4,6 +4,7 @@ from math import cos, degrees, inf, radians, sin
 from pathlib import Path
 from random import choice, random, randrange
 from typing import Callable
+from time import sleep
 
 from celluloid import Camera
 from matplotlib import pyplot as plt
@@ -87,21 +88,6 @@ class ImageQuality(IntEnum):
 
 
 def add_box_navigator_arguments(parser: ArgumentParser) -> None:
-    #
-    # Required arguments
-    #
-
-    parser.add_argument(
-        "navigator",
-        type=Navigator.argparse,
-        choices=list(Navigator),
-        help="Navigator to run.",
-    )
-
-    #
-    # Optional arguments
-    #
-
     parser.add_argument(
         "--translation_increment",
         type=float,
@@ -274,7 +260,8 @@ class BoxNavigator:
         self.num_resets = 0
         self.trial_num = 0
 
-        self.previous_action = Action.NO_ACTION
+        # Initial delay is 1s so that UE can get warmed up
+        self.image_delay = 3
 
         # All other member variables are initialized in reset()
         self.reset()
@@ -307,6 +294,9 @@ class BoxNavigator:
                 self.ue.close_osc()
                 print("Check if UE packaged game is running.")
                 raise SystemExit
+
+            # Reset z coordinates with a 1s delay to allow the reset before moving on
+            self.ue.reset(1)
 
             self.__sync_ue_rotation()
             self.__sync_ue_position()
@@ -398,13 +388,15 @@ class BoxNavigator:
             self.images_saved += 1
             self.latest_image_filepath = f"{self.image_directory}/{self.trial_num:03}_{self.images_saved:06}_{angle}.{self.image_extension}"
 
-            self.ue.save_image(self.latest_image_filepath, delay=0.25)
+            # Lower the delay after the first image since UE is warmed up
+            self.ue.save_image(self.latest_image_filepath, delay=self.image_delay)
+            self.image_delay = 0.25
 
         # Randomize the texture of the walls, floors, and ceilings
-        randomize = self.num_actions_executed != 0 and self.randomize_interval != inf
-        if self.sync_with_ue and randomize:
-            random_surface = choice(list(TexturedSurface))
-            self.ue.set_texture(random_surface, randrange(NUM_TEXTURES))
+        if self.sync_with_ue:
+            if self.num_actions_executed != 0 and self.randomize_interval != inf:
+                random_surface = choice(list(TexturedSurface))
+                self.ue.set_texture(random_surface, randrange(NUM_TEXTURES))
 
         # Loop until we have executed an action or until "stuck"
         while True:
@@ -426,8 +418,8 @@ class BoxNavigator:
 
         # Execute the action
         self.execute_action(action_navigator)
+        print("Action taken: ", action_navigator)
 
-        self.previous_action = action_navigator
         return action_navigator, action_correct
 
     def __move_is_possible(self, action: Action) -> bool:
@@ -451,7 +443,7 @@ class BoxNavigator:
 
     def __sync_ue_position(self) -> None:
         try:
-            self.ue.set_location_xy(self.position.x, self.position.y)
+            self.ue.set_location_xy(self.position.x, self.position.y, delay=0.1)
 
         except TimeoutError:
             self.ue.close_osc()
@@ -471,6 +463,9 @@ class BoxNavigator:
             self.ue.close_osc()
             print("Could not sync rotation with UE.")
             raise SystemExit
+
+    def action_translate(self, direction: Action) -> None:
+        self.__action_translate(direction)
 
     def __action_translate(self, direction: Action) -> None:
         sign = -1 if direction == Action.BACKWARD else 1
@@ -509,7 +504,6 @@ class BoxNavigator:
         # rotations to be clockwise.
         elif signed_angle_to_target < 0:
             action = Action.ROTATE_LEFT
-
         else:
             action = Action.ROTATE_RIGHT
 
@@ -530,7 +524,7 @@ class BoxNavigator:
         # - number of resets
         # - number of actions executed
         # - ...
-        return self.vision_callback(self.previous_action, self.latest_image_filepath)
+        return self.vision_callback(self.latest_image_filepath)
 
     def __update_target_if_necessary(self) -> None:
         assert not self.at_final_target(), "Already at final target."
