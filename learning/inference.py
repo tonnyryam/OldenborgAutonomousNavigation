@@ -9,6 +9,8 @@ import wandb
 from fastai.callback.wandb import WandbCallback
 from fastai.vision.learner import load_learner
 from utils import y_from_filename  # noqa: F401 (needed for fastai load_learner)
+import ffmpeg
+import subprocess
 
 from boxnav.box import Pt
 from boxnav.boxenv import BoxEnv
@@ -54,6 +56,9 @@ def parse_args():
         type=int,
         default=10,
         help="Maximum number of actions to take.",
+    )
+    arg_parser.add_argument(
+        "--make_gif", type=bool, help="Makes a GIF from the images saved."
     )
     return arg_parser.parse_args()
 
@@ -130,7 +135,7 @@ def main():
             # Save image
             image_filename = f"{output_dir}/{action_step:04}.png"
             ue.save_image(image_filename)
-            sleep(0.5)
+            sleep(3)
 
             # Predict correct action
             action_to_take, action_index, action_probs = model.predict(image_filename)
@@ -159,6 +164,12 @@ def main():
                     ue.rotate_right(args.rotation_amount)
                 case _:
                     raise ValueError(f"Unknown action: {action_to_take}")
+    if args.make_gif:
+        subprocess.run(
+            [
+                "ffmpeg -framerate 1 -pattern_type glob -i 'output_dir' -c:v libx264 -pix_fmt yuv420p gif.mp4"
+            ]
+        )
 
 
 if __name__ == "__main__":
