@@ -260,7 +260,8 @@ class BoxNavigator:
         self.num_resets = 0
         self.trial_num = 0
 
-        self.image_delay = 1
+        # Initial delay is 1s so that UE can get warmed up
+        self.image_delay = 3
 
         # All other member variables are initialized in reset()
         self.reset()
@@ -294,7 +295,7 @@ class BoxNavigator:
                 print("Check if UE packaged game is running.")
                 raise SystemExit
 
-            # Reset z coordinates
+            # Reset z coordinates with a 1s delay to allow the reset before moving on
             self.ue.reset(1)
 
             self.__sync_ue_rotation()
@@ -387,6 +388,7 @@ class BoxNavigator:
             self.images_saved += 1
             self.latest_image_filepath = f"{self.image_directory}/{self.trial_num:03}_{self.images_saved:06}_{angle}.{self.image_extension}"
 
+            # Lower the delay after the first image since UE is warmed up
             self.ue.save_image(self.latest_image_filepath, delay=self.image_delay)
             self.image_delay = 0.25
 
