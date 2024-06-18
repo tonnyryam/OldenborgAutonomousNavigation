@@ -179,6 +179,7 @@ def main():
     )
 
     pbar_manager = enlighten.get_manager()
+    trials_pbar = pbar_manager.counter(total=args.num_trials, desc="Trials: ")
 
     inference_data = []
 
@@ -187,43 +188,47 @@ def main():
         forward_count, rotate_left_count, rotate_right_count = 0, 0, 0
         incorrect_left_count, incorrect_right_count = 0, 0
 
-        navigation_pbar = pbar_manager.counter(total=100, desc="Completion")
+        actions_pbar = pbar_manager.counter(total=args.max_actions, desc="Actions: ")
+        navigation_pbar = pbar_manager.counter(total=100, desc="Completion: ")
 
         for _ in range(args.max_actions):
             try:
                 executed_action, correct_action = agent.execute_navigator_action()
 
-                total_actions_taken += 1
-                correct_action_taken += 1 if executed_action == correct_action else 0
-                if (
-                    executed_action == Action.ROTATE_LEFT
-                    and correct_action == Action.ROTATE_RIGHT
-                ):
-                    incorrect_left_count += 1
-                elif (
-                    executed_action == Action.ROTATE_RIGHT
-                    and correct_action == Action.ROTATE_LEFT
-                ):
-                    incorrect_right_count += 1
-
-                match executed_action:
-                    case Action.FORWARD:
-                        forward_count += 1
-                    case Action.ROTATE_LEFT:
-                        rotate_left_count += 1
-                    case Action.ROTATE_RIGHT:
-                        rotate_right_count += 1
-
             except Exception as e:
                 print(e)
                 break
 
+            total_actions_taken += 1
+            correct_action_taken += 1 if executed_action == correct_action else 0
+            if (
+                executed_action == Action.ROTATE_LEFT
+                and correct_action == Action.ROTATE_RIGHT
+            ):
+                incorrect_left_count += 1
+            elif (
+                executed_action == Action.ROTATE_RIGHT
+                and correct_action == Action.ROTATE_LEFT
+            ):
+                incorrect_right_count += 1
+
+            match executed_action:
+                case Action.FORWARD:
+                    forward_count += 1
+                case Action.ROTATE_LEFT:
+                    rotate_left_count += 1
+                case Action.ROTATE_RIGHT:
+                    rotate_right_count += 1
+
             if agent.get_percent_through_env() >= 99.0:
-                print("Agent reached final target")
+                print("Agent reached final target.")
                 break
+
             elif agent.is_stuck():
                 print("Agent is stuck.")
                 break
+
+            actions_pbar.update()
 
             # Navigation progress is based on the percentage of the environment navigated
             navigation_pbar.count = int(agent.get_percent_through_env())
@@ -242,9 +247,12 @@ def main():
         inference_data.append(run_data)
 
         agent.reset()
+        trials_pbar.update()
+        actions_pbar.close()
         navigation_pbar.close()
 
     agent.ue.close_osc()
+    trials_pbar.close()
     pbar_manager.stop()
 
     # Implement new table
