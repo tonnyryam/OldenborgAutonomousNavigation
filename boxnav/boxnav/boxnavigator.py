@@ -3,8 +3,8 @@ from enum import Enum, IntEnum
 from math import cos, degrees, inf, radians, sin
 from pathlib import Path
 from random import choice, random, randrange
-from typing import Callable
 from time import sleep
+from typing import Callable
 
 from celluloid import Camera
 from matplotlib import pyplot as plt
@@ -463,9 +463,6 @@ class BoxNavigator:
             self.ue.close_osc()
             print("Could not sync rotation with UE.")
             raise SystemExit
-
-    def action_translate(self, direction: Action) -> None:
-        self.__action_translate(direction)
 
     def __action_translate(self, direction: Action) -> None:
         sign = -1 if direction == Action.BACKWARD else 1
