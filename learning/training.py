@@ -198,6 +198,7 @@ def get_image_command_category_dataloaders(
         # item_tfms=Resize(args.image_resize),
     )
 
+    # TODO: This is untested
     return image_command_data.dataloaders(
         data_paths[0], shuffle=True, batch_size=args.batch_size
     )
