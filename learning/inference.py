@@ -12,7 +12,6 @@ import wandb
 from fastai.callback.wandb import WandbCallback
 from fastai.vision.learner import load_learner
 from utils import y_from_filename  # noqa: F401 (needed for fastai load_learner)
-import ffmpeg
 import subprocess
 
 from boxnav.box import Pt
@@ -100,6 +99,8 @@ def parse_args():
         default=10,
         help="Maximum number of actions to take.",
     )
+    add_box_navigator_arguments(arg_parser)
+
     return arg_parser.parse_args()
 
 
@@ -178,7 +179,9 @@ def main():
     )
 
     pbar_manager = enlighten.get_manager()
-    trials_pbar = pbar_manager.counter(total=args.num_trials, desc="Trials: ")
+    trials_pbar = pbar_manager.counter(
+        total=args.num_trials, desc="Trials:              "
+    )
 
     inference_data = []
 
@@ -187,8 +190,12 @@ def main():
         forward_count, rotate_left_count, rotate_right_count = 0, 0, 0
         incorrect_left_count, incorrect_right_count = 0, 0
 
-        actions_pbar = pbar_manager.counter(total=args.max_actions, desc="Actions: ")
-        navigation_pbar = pbar_manager.counter(total=100, desc="Completion: ")
+        actions_pbar = pbar_manager.counter(
+            total=args.max_actions, desc="Actions    (trial " + str(_ + 1) + "):"
+        )
+        navigation_pbar = pbar_manager.counter(
+            total=100, desc="Completion (trial " + str(_ + 1) + "):"
+        )
 
         for _ in range(args.max_actions):
             try:
@@ -267,6 +274,31 @@ def main():
     ]
     inference_data_table = wandb.Table(columns=table_cols, data=inference_data)
     run.log({"Inference Data": inference_data_table})
+
+    video_name = (str(agent.image_directory).split("/"))[-1]
+    filelist_name = video_name + "_filelist.txt"
+
+    image_files = sorted([f for f in agent.image_directory.iterdir()])
+    with open(filelist_name, "w") as file_out:
+        for file in image_files:
+            file_out.write(f"file '{Path(file)}'\n")
+
+    subprocess.run(
+        [
+            "ffmpeg",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            filelist_name,
+            "-c:v",
+            "libx264",
+            "-pix_fmt",
+            "yuv420p",
+            agent.image_directory / (video_name + ".mp4"),
+        ]
+    )
 
 
 if __name__ == "__main__":
