@@ -296,8 +296,8 @@ class BoxNavigator:
                 print("Check if UE packaged game is running.")
                 raise SystemExit
 
-            # Reset z coordinates with a 1s delay to allow the reset before moving on
-            self.ue.reset(1)
+            # Reset z coordinates with a 2s delay to allow the reset before moving on
+            self.ue.reset(2)
 
             self.__sync_ue_rotation()
             self.__sync_ue_position()
