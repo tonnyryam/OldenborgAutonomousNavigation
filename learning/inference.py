@@ -182,6 +182,13 @@ def main():
     trials_pbar = pbar_manager.counter(total=args.num_trials, desc="Trials: ")
 
     inference_data = []
+    executed_actions, correct_actions = [], []
+
+    action_to_confusion = {
+        Action.FORWARD: 0,
+        Action.ROTATE_RIGHT: 1,
+        Action.ROTATE_LEFT: 2,
+    }
 
     for _ in range(args.num_trials):
         total_actions_taken, correct_action_taken = 0, 0
@@ -198,6 +205,10 @@ def main():
             except Exception as e:
                 print(e)
                 break
+
+            if executed_action != Action.NO_ACTION:
+                executed_actions.append(action_to_confusion[executed_action])
+                correct_actions.append(action_to_confusion[correct_action])
 
             total_actions_taken += 1
             correct_action_taken += 1 if executed_action == correct_action else 0
@@ -254,6 +265,18 @@ def main():
     agent.ue.close_osc()
     trials_pbar.close()
     pbar_manager.stop()
+
+    # ------------------------------- DATA PLOTTING IN WANDB -------------------------------
+    wandb.log(
+        {
+            "conf_mat": wandb.plot.confusion_matrix(
+                probs=None,
+                preds=executed_actions,
+                y_true=correct_actions,
+                class_names=["forward", "right", "left"],
+            )
+        }
+    )
 
     # Implement new table
     table_cols = [
