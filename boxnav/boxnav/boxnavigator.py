@@ -3,6 +3,7 @@ from enum import Enum, IntEnum
 from math import cos, degrees, inf, radians, sin
 from pathlib import Path
 from random import choice, random, randrange
+from time import sleep
 from typing import Callable
 from time import sleep
 
