@@ -291,6 +291,7 @@ def main():
             rotate_right_count,
             incorrect_left_count,
             incorrect_right_count,
+            total_actions_taken / agent.get_percent_through_env(),
         ]
         inference_data.append(run_data)
 
@@ -359,9 +360,22 @@ def main():
         "Rotate Right Action Taken",
         "Incorrect Left Taken",
         "Incorrect Right Taken",
+        "# Actions per Percent of Env",
     ]
     inference_data_table = wandb.Table(columns=table_cols, data=inference_data)
     run.log({"Inference Data": inference_data_table})
+
+    # Line plot to assess efficiency of model
+    wandb.log(
+        {
+            "Efficiency": wandb.plot.line(
+                inference_data_table,
+                "# Actions per Percent of Env",
+                "Percent through Environment",
+                title="Percent through environment vs. # of Actions per percent of Environment",
+            )
+        }
+    )
 
 
 if __name__ == "__main__":
