@@ -5,6 +5,10 @@ from contextlib import contextmanager
 from functools import partial
 from math import radians
 from pathlib import Path
+import random
+import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+import time
 
 import enlighten
 
@@ -73,6 +77,17 @@ def inference_func(model, image_file: str):
 
     action_prev = action_now
     return action_now
+
+
+colors = ["b", "g", "r", "c", "m", "y", "k"]
+line_styles = ["-", "--", "-.", ":"]
+
+
+def plot_trial(axis: Axes, x_values, y_values) -> None:
+    random_color = random.choice(colors)
+    random_line_style = random.choice(line_styles)
+
+    axis.plot(x_values, y_values, color=random_color, linestyle=random_line_style)
 
 
 def parse_args():
@@ -183,6 +198,8 @@ def main():
 
     inference_data = []
     executed_actions, correct_actions = [], []
+    all_xs, all_ys = [], []
+    execution_times = []
 
     action_to_confusion = {
         Action.FORWARD: 0,
@@ -190,10 +207,16 @@ def main():
         Action.ROTATE_LEFT: 2,
     }
 
-    for _ in range(args.num_trials):
+    # Initialize the box image display
+    plot_fig, plot_axis = plt.subplots()
+    box_env.display(plot_axis)
+
+    for trial in range(args.num_trials):
         total_actions_taken, correct_action_taken = 0, 0
         forward_count, rotate_left_count, rotate_right_count = 0, 0, 0
         incorrect_left_count, incorrect_right_count = 0, 0
+
+        xs, ys = [], []
 
         actions_pbar = pbar_manager.counter(total=args.max_actions, desc="Actions: ")
         navigation_pbar = pbar_manager.counter(total=100, desc="Completion: ")
@@ -231,13 +254,9 @@ def main():
                 case Action.ROTATE_RIGHT:
                     rotate_right_count += 1
 
-            if agent.get_percent_through_env() >= 99.0:
-                print("Agent reached final target.")
-                break
-
-            elif agent.is_stuck():
-                print("Agent is stuck.")
-                break
+            current_x, current_y = agent.position.xy()
+            xs.append(current_x)
+            ys.append(current_y)
 
             actions_pbar.update()
 
@@ -245,7 +264,21 @@ def main():
             navigation_pbar.count = int(agent.get_percent_through_env())
             navigation_pbar.update()
 
+            if agent.get_percent_through_env() >= 99.0:
+                print("Agent reached final target.")
+                break
+
+            elif agent.is_stuck():
+                print("Agent is stuck.")
+                plot_axis.plot(current_x, current_y, "ro")
+                break
+
+        plot_trial(plot_axis, xs, ys)
+        all_xs.append(xs)
+        all_ys.append(ys)
+
         run_data = [
+            trial,
             agent.get_percent_through_env(),
             total_actions_taken,
             correct_action_taken,
@@ -267,6 +300,9 @@ def main():
     pbar_manager.stop()
 
     # ------------------------------- DATA PLOTTING IN WANDB -------------------------------
+    plot_fig.savefig(str(args.output_dir) + ".png")
+    run.log({"Plotted Paths": wandb.Image((str(args.output_dir) + ".png"))})
+
     wandb.log(
         {
             "conf_mat": wandb.plot.confusion_matrix(
@@ -278,9 +314,24 @@ def main():
         }
     )
 
+    wandb.log(
+        {
+            "Consistency": wandb.plot.line_series(
+                xs=all_xs,
+                ys=all_ys,
+                keys=[
+                    "Trial " + str(trial_num) for trial_num in range(args.num_trials)
+                ],
+                title="Tracking where Agent has been",
+                xname="x location",
+            )
+        }
+    )
+
     # Implement new table
     table_cols = [
-        "Percent through environment",
+        "Trial",
+        "Percent through Environment",
         "Total Actions Taken",
         "Correct Actions Taken",
         "Forward Action Taken",
