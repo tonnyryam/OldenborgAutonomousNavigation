@@ -9,6 +9,7 @@ import random
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 import time
+import numpy as np
 
 import enlighten
 
@@ -222,12 +223,15 @@ def main():
         navigation_pbar = pbar_manager.counter(total=100, desc="Completion: ")
 
         for _ in range(args.max_actions):
+            start_time = time.time()
             try:
                 executed_action, correct_action = agent.execute_navigator_action()
 
             except Exception as e:
                 print(e)
                 break
+            end_time = time.time()
+            execution_times.append(end_time - start_time)
 
             if executed_action != Action.NO_ACTION:
                 executed_actions.append(action_to_confusion[executed_action])
@@ -303,6 +307,22 @@ def main():
     plot_fig.savefig(str(args.output_dir) + ".png")
     run.log({"Plotted Paths": wandb.Image((str(args.output_dir) + ".png"))})
 
+    # Distribution of how long it takes to execute actions (won't include first action)
+    bin_edges = [0.05 * t for t in range(10)]
+    hist, _ = np.histogram(execution_times, bins=bin_edges)
+    binned_data = [[bin_edges[i], bin_edges[i + 1], hist[i]] for i in range(len(hist))]
+    time_table = wandb.Table(
+        data=binned_data, columns=["Bin Start", "Bin End", "Frequency"]
+    )
+    wandb.log(
+        {
+            "Executed Timer Histogram": wandb.plot.bar(
+                time_table, "Bin Start", "Frequency", title="Executed Timer Histogram"
+            )
+        }
+    )
+
+    # Confusion Matrix assessing ALL trials
     wandb.log(
         {
             "conf_mat": wandb.plot.confusion_matrix(
