@@ -268,7 +268,7 @@ def main():
             navigation_pbar.count = int(agent.get_percent_through_env())
             navigation_pbar.update()
 
-            if agent.get_percent_through_env() >= 99.0:
+            if agent.get_percent_through_env() >= 98.0:
                 print("Agent reached final target.")
                 break
 
@@ -393,6 +393,14 @@ def main():
             )
         }
     )
+
+    # Create subtable containing only runs where the agent completed target
+    completed_runs = [row for row in inference_data_table.data if row[1] >= 98.0]
+    completed_runs_table = wandb.Table(columns=table_cols, data=completed_runs)
+
+    run.log({"Completed table": completed_runs_table})
+
+    # BRAINSTORM METRICS FOR **ONLY COMPLETE** RUNS
 
 
 if __name__ == "__main__":
