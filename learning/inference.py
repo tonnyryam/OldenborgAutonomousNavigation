@@ -231,7 +231,7 @@ def main():
                 print(e)
                 break
             end_time = time.time()
-            execution_times.append(end_time - start_time)
+            execution_times.append([end_time - start_time])
 
             if executed_action != Action.NO_ACTION:
                 executed_actions.append(action_to_confusion[executed_action])
@@ -308,17 +308,34 @@ def main():
     plot_fig.savefig(str(args.output_dir) + ".png")
     run.log({"Plotted Paths": wandb.Image((str(args.output_dir) + ".png"))})
 
-    # Distribution of how long it takes to execute actions (won't include first action)
-    bin_edges = [0.05 * t for t in range(10)]
-    hist, _ = np.histogram(execution_times, bins=bin_edges)
-    binned_data = [[bin_edges[i], bin_edges[i + 1], hist[i]] for i in range(len(hist))]
-    time_table = wandb.Table(
-        data=binned_data, columns=["Bin Start", "Bin End", "Frequency"]
+    # Distribution of how long it takes to execute actions
+    time_table = wandb.Table(data=execution_times, columns=["Time Estimate"])
+    fields = {"value": "Time Estimate", "title": "Executed Timer Histogram"}
+    histogram = wandb.plot_table(
+        vega_spec_name="wandb/histogram_small_bins",
+        data_table=time_table,
+        fields=fields,
     )
-    wandb.log(
+    wandb.log({"Executed Timer Histogram": histogram})
+
+    # Calculate summary statistics for action execution times
+    execution_times_array = np.array(execution_times)
+    percentiles = np.percentile(execution_times_array, [25, 50, 75])
+
+    summary_stats = [
+        ["Mean", np.mean(execution_times_array)],
+        ["Standard Deviation", np.std(execution_times_array)],
+        ["Median", np.median(execution_times_array)],
+        ["Minimum Value", np.min(execution_times_array)],
+        ["Maximum Value", np.max(execution_times_array)],
+        ["25th Percentile", percentiles[0]],
+        ["50th Percentile", percentiles[1]],
+        ["75th Percentile", percentiles[2]],
+    ]
+    run.log(
         {
-            "Executed Timer Histogram": wandb.plot.bar(
-                time_table, "Bin Start", "Frequency", title="Executed Timer Histogram"
+            "Inference Execute Action Timer Data": wandb.Table(
+                columns=["Statistic", "Value"], data=summary_stats
             )
         }
     )
