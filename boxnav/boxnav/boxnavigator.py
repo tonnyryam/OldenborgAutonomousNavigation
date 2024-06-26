@@ -15,6 +15,7 @@ from ue5osc import NUM_TEXTURES, Communicator, TexturedSurface
 
 from .box import Pt
 from .boxenv import BoxEnv
+from boxnav.environments import oldenborg_boxes as boxes
 
 
 # TODO: consider change from ROTATE_LEFT and ROTATE_RIGHT to ROTATE_CCW and ROTATE_CW
@@ -89,6 +90,22 @@ class ImageQuality(IntEnum):
 
 
 def add_box_navigator_arguments(parser: ArgumentParser) -> None:
+    starting_box = boxes[0]
+    initial_x = starting_box.left + starting_box.width / 2
+    initial_y = starting_box.lower + 50
+
+    parser.add_argument(
+        "--initial_position",
+        type=Pt,
+        default=Pt(initial_x, initial_y),
+        help="Set the starting position of the agent",
+    )
+    parser.add_argument(
+        "--initial_rotation",
+        type=float,
+        default=radians(90),
+        help="Set the starting rotation of the agent",
+    )
     parser.add_argument(
         "--translation_increment",
         type=float,
@@ -174,13 +191,11 @@ class BoxNavigator:
     def __init__(
         self,
         env: BoxEnv,
-        position: Pt,
-        rotation: float,
         args: Namespace,
         vision_callback: Callable[[str], Action] | None = None,
     ) -> None:
         self.env = env
-        self.initial_position = position
+        self.initial_position = args.initial_position
         self.env_distances = [
             Pt.distance(self.initial_position, self.env.boxes[0].target)
         ]
@@ -191,7 +206,7 @@ class BoxNavigator:
                     self.env.boxes[i + 1].target,
                 )
             )
-        self.initial_rotation = rotation
+        self.initial_rotation = args.initial_rotation
         self.final_target = self.env.boxes[-1].target
 
         # TODO: find appropriate values for these

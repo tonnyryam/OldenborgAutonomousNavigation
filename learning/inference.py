@@ -179,17 +179,9 @@ def main():
 
     box_env = BoxEnv(boxes)
 
-    starting_box = boxes[0]
-    initial_x = starting_box.left + starting_box.width / 2
-    initial_y = starting_box.lower + 50
-    initial_position = Pt(initial_x, initial_y)
-    initial_rotation = radians(90)
-
     # TODO: use context manager for UE connection?
     agent = BoxNavigator(
         box_env,
-        initial_position,
-        initial_rotation,
         args,
         vision_callback=partial(inference_func, model),
     )
