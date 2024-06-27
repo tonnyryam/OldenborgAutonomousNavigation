@@ -413,7 +413,11 @@ class BoxNavigator:
 
         # Randomize the texture of the walls, floors, and ceilings
         if self.sync_with_ue:
-            if self.num_actions_executed != 0 and self.randomize_interval != inf:
+            if (
+                self.num_actions_executed != 0
+                and self.randomize_interval != inf
+                and self.num_actions_executed % self.randomize_interval == 0
+            ):
                 random_surface = choice(list(TexturedSurface))
                 self.ue.set_texture(random_surface, randrange(NUM_TEXTURES))
 
