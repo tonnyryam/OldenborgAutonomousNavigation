@@ -33,6 +33,11 @@ def simulate(args: Namespace) -> None:
     navigation_pbar = pbar_manager.counter(total=100, desc="Completion")
 
     for _ in range(args.max_total_actions):
+        if args.delay != float("inf"):
+            sleep(args.delay)
+        else:
+            _ = input("Press Enter to continue... ")
+
         # Check for stopping conditions
         if agent.is_stuck() or agent.at_final_target():
             num_actions = agent.num_actions_executed
@@ -118,6 +123,9 @@ def main():
         "--stop_after_one_trial",
         action="store_true",
         help="Stop after one time through the environment (for debugging).",
+    )
+    argparser.add_argument(
+        "--delay", type=float, default=0.0, help="Delay between actions."
     )
 
     args = argparser.parse_args()
