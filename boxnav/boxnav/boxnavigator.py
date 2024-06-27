@@ -1,6 +1,6 @@
 from argparse import ArgumentParser, Namespace
 from enum import Enum, IntEnum
-from math import cos, degrees, inf, radians, sin
+from math import atan2, cos, degrees, inf, radians, sin
 from pathlib import Path
 from random import choice, random, randrange, uniform
 from time import sleep
@@ -287,14 +287,19 @@ class BoxNavigator:
         self.rotation = self.initial_rotation
         self.target = self.env.boxes[0].target
         self.previous_target = self.position
-        self.current_box = self.env.boxes[0]
-        self.target_inside = False
 
         self.num_actions_executed = 0
         self.num_resets += 1
         self.trial_num += 1
 
         self.is_stuck_counter = 0
+
+        if self.__compute_action_navigator == self.__compute_action_teleporting:
+            print("set action teleport")
+            self.current_box = self.env.boxes[0]
+            self.target_inside = False
+            self.dominant_direction = self.determine_direction_to_target()
+            self.update_anchors()
 
         # self.stuck = False  # Can only be True in unreal wrapper
         # self.previous_target = self.position
@@ -517,6 +522,7 @@ class BoxNavigator:
         """Determine the 'direction' to the target based on changes in coordinates."""
 
         # Calculate the change in coordinates
+        print("Previous Target", self.previous_target, "\tCurrent Target", self.target)
         delta_x = self.target.x - self.previous_target.x
         delta_y = self.target.y - self.previous_target.y
 
@@ -533,6 +539,38 @@ class BoxNavigator:
                 dominant_direction = "down"
 
         return dominant_direction
+
+    def rotation_anchor(self, current_target: Pt, current_box: Box) -> list[Pt]:
+        width_half = current_box.width / 2
+        height_half = current_box.height / 2
+
+        if self.dominant_direction in ["left", "right"]:
+            # Calculate the distance from the center to the left and right sides of the box
+            anchor_1 = Pt(current_target.x, current_target.y - height_half)
+            anchor_2 = Pt(current_target.x, current_target.y + height_half)
+
+        elif self.dominant_direction in ["up", "down"]:
+            # Calculate the distance from the center to the top and bottom sides of the box
+            anchor_1 = Pt(current_target.x - width_half, current_target.y)
+            anchor_2 = Pt(current_target.x + width_half, current_target.y)
+
+        # TODO: Do we need this else statement?
+        else:
+            # Default to using the current target
+            self.anchor_1 = Pt(current_target.x, current_target.y)
+            self.anchor_2 = Pt(current_target.x, current_target.y)
+
+        return [Pt(anchor_1.x, anchor_1.y), Pt(anchor_2.x, anchor_2.y)]
+
+    def update_anchors(self) -> None:
+        self.anchor_1 = self.rotation_anchor(self.target, self.current_box)[0]
+        self.anchor_2 = self.rotation_anchor(self.target, self.current_box)[1]
+
+    def random_rotation_to_target(self, anchor_1: Pt, anchor_2: Pt) -> float:
+        random_x = uniform(anchor_1.x, anchor_2.x)
+        random_y = uniform(anchor_1.y, anchor_2.y)
+        angle = atan2(random_y - self.position.y, random_x - self.position.x)
+        return angle
 
     def __action_teleport(self) -> Action:
         # TODO: don't hardcode this (how big teleport box will be)
@@ -592,9 +630,9 @@ class BoxNavigator:
 
         self.position = possible_new_position
 
-        # Also want random rotation within current wedge (see display)
-        # wedge_lo = degrees(self.rotation - self.target_half_wedge)
-        # wedge_hi = degrees(self.rotation + self.target_half_wedge)
+        # Set random rotation in direction of target
+        random_angle = self.random_rotation_to_target(self.anchor_1, self.anchor_2)
+        self.rotation = random_angle
 
         if self.sync_with_ue:
             self.__sync_ue_position()
@@ -642,15 +680,18 @@ class BoxNavigator:
 
         if distance_to_target < self.target_threshold:
             self.previous_target = self.target
+
             # This will throw an exception if the boxes do not properly overlap
             self.target = surrounding_boxes[-1].target
-            self.current_box = surrounding_boxes[-1]  # Update current box
-            self.dominant_direction = self.determine_direction_to_target()
-            self.target_inside = False
-
-            # self.dominant_direction = self.determine_direction_to_target(self.target)
-            # self.anchor_1 = self.rotation_anchor(self.target, self.current_box)[0]
-            # self.anchor_2 = self.rotation_anchor(self.target, self.current_box)[1]
+            print("Target updated")
+            
+            # Update variables specific to teleport
+            if self.__compute_action_navigator == self.__compute_action_teleporting:
+                print("Update teleport in update target")
+                self.current_box = surrounding_boxes[-1]
+                self.dominant_direction = self.determine_direction_to_target()
+                self.target_inside = False
+                self.update_anchors()
 
     def get_percent_through_env(self) -> float:
         last_box = self.env.get_boxes_enclosing_point(self.position)[-1]
