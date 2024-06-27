@@ -91,6 +91,86 @@ def plot_trial(axis: Axes, x_values, y_values) -> None:
     axis.plot(x_values, y_values, color=random_color, linestyle=random_line_style)
 
 
+def wandb_generate_path_plot(
+    all_xs: list[float], all_ys: list[float], num_trials: int
+) -> None:
+    wandb.log(
+        {
+            "Consistency": wandb.plot.line_series(
+                xs=all_xs,
+                ys=all_ys,
+                keys=["Trial " + str(trial_num) for trial_num in range(num_trials)],
+                title="Tracking where Agent has been",
+                xname="x location",
+            )
+        }
+    )
+
+
+def wandb_generate_timer_stats(wandb_run, execution_times: list[float]) -> None:
+    # Distribution of how long it takes to execute actions
+    time_table = wandb.Table(data=execution_times, columns=["Time Estimate"])
+    fields = {"value": "Time Estimate", "title": "Executed Timer Histogram"}
+    histogram = wandb.plot_table(
+        vega_spec_name="wandb/histogram_small_bins",
+        data_table=time_table,
+        fields=fields,
+    )
+    wandb.log({"Executed Timer Histogram": histogram})
+
+    # Calculate summary statistics for action execution times
+    execution_times_array = np.array(execution_times)
+    percentiles = np.percentile(execution_times_array, [25, 50, 75])
+
+    summary_stats = [
+        ["Mean", np.mean(execution_times_array)],
+        ["Standard Deviation", np.std(execution_times_array)],
+        ["Median", np.median(execution_times_array)],
+        ["Minimum Value", np.min(execution_times_array)],
+        ["Maximum Value", np.max(execution_times_array)],
+        ["25th Percentile", percentiles[0]],
+        ["50th Percentile", percentiles[1]],
+        ["75th Percentile", percentiles[2]],
+    ]
+    wandb_run.log(
+        {
+            "Inference Execute Action Timer Data": wandb.Table(
+                columns=["Statistic", "Value"], data=summary_stats
+            )
+        }
+    )
+
+
+def wandb_generate_confusion_matrix(
+    executed_actions: list[int], correct_actions: list[int]
+) -> None:
+    # Confusion Matrix assessing ALL trials
+    wandb.log(
+        {
+            "conf_mat": wandb.plot.confusion_matrix(
+                probs=None,
+                preds=executed_actions,
+                y_true=correct_actions,
+                class_names=["forward", "right", "left"],
+            )
+        }
+    )
+
+
+def wandb_generate_efficiency_plot(inference_data_table) -> None:
+    # Line plot to assess efficiency of model
+    wandb.log(
+        {
+            "Efficiency": wandb.plot.line(
+                inference_data_table,
+                "# Actions per Percent of Env",
+                "Percent through Environment",
+                title="Percent through environment vs. # of Actions per percent of Environment",
+            )
+        }
+    )
+
+
 def parse_args():
     arg_parser = ArgumentParser("Track performance of trained networks.")
 
@@ -189,26 +269,28 @@ def main():
     pbar_manager = enlighten.get_manager()
     trials_pbar = pbar_manager.counter(total=args.num_trials, desc="Trials: ")
 
-    inference_data = []
-    executed_actions, correct_actions = [], []
-    all_xs, all_ys = [], []
-    execution_times = []
-
+    # Dictionary to help store action moves in confusion matrix
     action_to_confusion = {
         Action.FORWARD: 0,
         Action.ROTATE_RIGHT: 1,
         Action.ROTATE_LEFT: 2,
     }
 
-    # Initialize the box image display
+    # Initialize the box image display to graph
     plot_fig, plot_axis = plt.subplots()
     box_env.display(plot_axis)
 
+    # Initialize data tracking variables across the entire run
+    inference_data = []
+    executed_actions, correct_actions = [], []
+    all_xs, all_ys = [], []
+    execution_times = []
+
     for trial in range(args.num_trials):
+        # Initialize data tracking variables within a single trial
         total_actions_taken, correct_action_taken = 0, 0
         forward_count, rotate_left_count, rotate_right_count = 0, 0, 0
         incorrect_left_count, incorrect_right_count = 0, 0
-
         xs, ys = [], []
 
         actions_pbar = pbar_manager.counter(total=args.max_actions, desc="Actions: ")
@@ -297,68 +379,15 @@ def main():
     pbar_manager.stop()
 
     # ------------------------------- DATA PLOTTING IN WANDB -------------------------------
+    # Plotting where each agent has explored
     plot_fig.savefig(str(args.output_dir) + ".png")
     run.log({"Plotted Paths": wandb.Image((str(args.output_dir) + ".png"))})
+    wandb_generate_path_plot(all_xs, all_ys, args.num_trials)
 
-    # Distribution of how long it takes to execute actions
-    time_table = wandb.Table(data=execution_times, columns=["Time Estimate"])
-    fields = {"value": "Time Estimate", "title": "Executed Timer Histogram"}
-    histogram = wandb.plot_table(
-        vega_spec_name="wandb/histogram_small_bins",
-        data_table=time_table,
-        fields=fields,
-    )
-    wandb.log({"Executed Timer Histogram": histogram})
+    wandb_generate_timer_stats(execution_times)
+    wandb_generate_confusion_matrix(executed_actions, correct_actions)
 
-    # Calculate summary statistics for action execution times
-    execution_times_array = np.array(execution_times)
-    percentiles = np.percentile(execution_times_array, [25, 50, 75])
-
-    summary_stats = [
-        ["Mean", np.mean(execution_times_array)],
-        ["Standard Deviation", np.std(execution_times_array)],
-        ["Median", np.median(execution_times_array)],
-        ["Minimum Value", np.min(execution_times_array)],
-        ["Maximum Value", np.max(execution_times_array)],
-        ["25th Percentile", percentiles[0]],
-        ["50th Percentile", percentiles[1]],
-        ["75th Percentile", percentiles[2]],
-    ]
-    run.log(
-        {
-            "Inference Execute Action Timer Data": wandb.Table(
-                columns=["Statistic", "Value"], data=summary_stats
-            )
-        }
-    )
-
-    # Confusion Matrix assessing ALL trials
-    wandb.log(
-        {
-            "conf_mat": wandb.plot.confusion_matrix(
-                probs=None,
-                preds=executed_actions,
-                y_true=correct_actions,
-                class_names=["forward", "right", "left"],
-            )
-        }
-    )
-
-    wandb.log(
-        {
-            "Consistency": wandb.plot.line_series(
-                xs=all_xs,
-                ys=all_ys,
-                keys=[
-                    "Trial " + str(trial_num) for trial_num in range(args.num_trials)
-                ],
-                title="Tracking where Agent has been",
-                xname="x location",
-            )
-        }
-    )
-
-    # Implement new table
+    # Create table in Wandb tracking all data collected during the run
     table_cols = [
         "Trial",
         "Percent through Environment",
@@ -374,22 +403,11 @@ def main():
     inference_data_table = wandb.Table(columns=table_cols, data=inference_data)
     run.log({"Inference Data": inference_data_table})
 
-    # Line plot to assess efficiency of model
-    wandb.log(
-        {
-            "Efficiency": wandb.plot.line(
-                inference_data_table,
-                "# Actions per Percent of Env",
-                "Percent through Environment",
-                title="Percent through environment vs. # of Actions per percent of Environment",
-            )
-        }
-    )
+    wandb_generate_efficiency_plot(inference_data_table)
 
     # Create subtable containing only runs where the agent completed target
     completed_runs = [row for row in inference_data_table.data if row[1] >= 98.0]
     completed_runs_table = wandb.Table(columns=table_cols, data=completed_runs)
-
     run.log({"Completed table": completed_runs_table})
 
     # BRAINSTORM METRICS FOR **ONLY COMPLETE** RUNS
