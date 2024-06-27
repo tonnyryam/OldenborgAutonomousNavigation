@@ -2,7 +2,7 @@ from argparse import ArgumentParser, Namespace
 from enum import Enum, IntEnum
 from math import cos, degrees, inf, radians, sin
 from pathlib import Path
-from random import choice, random, randrange
+from random import choice, random, randrange, uniform
 from time import sleep
 from typing import Callable
 from time import sleep
@@ -13,7 +13,7 @@ from matplotlib.patches import Arrow, Wedge
 
 from ue5osc import NUM_TEXTURES, Communicator, TexturedSurface
 
-from .box import Pt
+from .box import Pt, Box
 from .boxenv import BoxEnv
 from boxnav.environments import oldenborg_boxes as boxes
 
@@ -286,6 +286,9 @@ class BoxNavigator:
         self.position = self.initial_position
         self.rotation = self.initial_rotation
         self.target = self.env.boxes[0].target
+        self.previous_target = self.position
+        self.current_box = self.env.boxes[0]
+        self.target_inside = False
 
         self.num_actions_executed = 0
         self.num_resets += 1
@@ -440,7 +443,7 @@ class BoxNavigator:
 
     def __move_is_possible(self, action: Action) -> bool:
         # Rotations are always possible
-        if action in [Action.ROTATE_LEFT, Action.ROTATE_RIGHT]:
+        if action in [Action.ROTATE_LEFT, Action.ROTATE_RIGHT, Action.TELEPORT]:
             return True
 
         sign = -1 if action == Action.BACKWARD else 1
@@ -506,7 +509,92 @@ class BoxNavigator:
         if self.sync_with_ue:
             self.__sync_ue_rotation()
 
-    def __action_teleport(self) -> Action: ...
+    def determine_direction_to_target(self) -> str:
+        """Determine the 'direction' to the target based on changes in coordinates."""
+
+        # Calculate the change in coordinates
+        delta_x = self.target.x - self.previous_target.x
+        delta_y = self.target.y - self.previous_target.y
+
+        # Determine the dominant change
+        if abs(delta_x) > abs(delta_y):
+            if delta_x > 0:
+                dominant_direction = "left"
+            else:
+                dominant_direction = "right"
+        else:
+            if delta_y > 0:
+                dominant_direction = "up"
+            else:
+                dominant_direction = "down"
+
+        return dominant_direction
+
+    def __action_teleport(self) -> Action:
+        # TODO: don't hardcode this (how big teleport box will be)
+        teleport_box_range = 100
+
+        print("In Action Teleport")
+        # Generate the encompassing points of the current box:
+        self.dominant_direction = self.determine_direction_to_target()
+        print(self.dominant_direction)
+
+        # if target isn't in the box, we want to update the box
+        # if it is, we continuously teleport in the box until we've updated the target
+        if not self.target_inside:
+            if self.dominant_direction == "left":
+                self.teleport_box_ll = Pt(
+                    self.position.x + teleport_box_range, self.current_box.lower
+                )
+                self.teleport_box_ur = Pt(self.position.x, self.current_box.upper)
+            elif self.dominant_direction == "right":
+                self.teleport_box_ll = Pt(self.position.x, self.current_box.lower)
+                self.teleport_box_ur = Pt(
+                    self.position.x - teleport_box_range, self.current_box.upper
+                )
+            elif self.dominant_direction == "up":
+                self.teleport_box_ll = Pt(self.current_box.left, self.position.y)
+                self.teleport_box_ur = Pt(
+                    self.current_box.right, self.position.y + teleport_box_range
+                )
+            elif self.dominant_direction == "down":
+                self.teleport_box_ll = Pt(
+                    self.current_box.left, self.position.y - teleport_box_range
+                )
+                self.teleport_box_ur = Pt(self.current_box.right, self.position.y)
+
+            # Create box using these two Pts
+            teleport_box_ul = Pt(self.teleport_box_ll.x, self.teleport_box_ur.y)
+            teleport_box = Box(
+                self.teleport_box_ll, teleport_box_ul, self.teleport_box_ur, None
+            )
+
+            self.target_inside = (
+                True if teleport_box.point_is_inside(self.target) else False
+            )
+        print("ll: ", self.teleport_box_ll, "\tur: ", self.teleport_box_ur)
+
+        # TODO: shorten the next 8 lines
+        # Want random pt within this box
+        x = uniform(self.teleport_box_ll.x, self.teleport_box_ur.x)
+        y = uniform(self.teleport_box_ll.y, self.teleport_box_ur.y)
+        possible_new_position = Pt(x, y)
+
+        # Prevent from teleporting out of bounds
+        while len(self.env.get_boxes_enclosing_point(possible_new_position)) == 0:
+            x = uniform(self.teleport_box_ll.x, self.teleport_box_ur.x)
+            y = uniform(self.teleport_box_ll.y, self.teleport_box_ur.y)
+            possible_new_position = Pt(x, y)
+
+        self.position = possible_new_position
+
+        # Also want random rotation within current wedge (see display)
+        # wedge_lo = degrees(self.rotation - self.target_half_wedge)
+        # wedge_hi = degrees(self.rotation + self.target_half_wedge)
+
+        if self.sync_with_ue:
+            self.__sync_ue_position()
+            self.__sync_ue_rotation()
 
     def __compute_action_correct(self) -> Action:
         signed_angle_to_target = self.__compute_signed_angle_to_target()
@@ -549,10 +637,13 @@ class BoxNavigator:
         distance_to_target = Pt.distance(self.position, self.target)
 
         if distance_to_target < self.target_threshold:
+            self.previous_target = self.target
             # This will throw an exception if the boxes do not properly overlap
-            self.target = surrounding_boxes[1].target
+            self.target = surrounding_boxes[-1].target
+            self.current_box = surrounding_boxes[-1]  # Update current box
+            self.dominant_direction = self.determine_direction_to_target()
+            self.target_inside = False
 
-            # self.current_box = surrounding_boxes[-1]  # Update current box
             # self.dominant_direction = self.determine_direction_to_target(self.target)
             # self.anchor_1 = self.rotation_anchor(self.target, self.current_box)[0]
             # self.anchor_2 = self.rotation_anchor(self.target, self.current_box)[1]
