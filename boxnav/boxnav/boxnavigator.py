@@ -295,7 +295,6 @@ class BoxNavigator:
         self.is_stuck_counter = 0
 
         if self.__compute_action_navigator == self.__compute_action_teleporting:
-            print("set action teleport")
             self.current_box = self.env.boxes[0]
             self.target_inside = False
             self.dominant_direction = self.determine_direction_to_target()
@@ -426,7 +425,7 @@ class BoxNavigator:
                 random_surface = choice(list(TexturedSurface))
                 self.ue.set_texture(random_surface, randrange(NUM_TEXTURES))
 
-        # Loop until we have executed an action or until "stuck"
+        # Loop until we have an executable or until "stuck"
         while True:
             if self.is_stuck_counter >= self.is_stuck_threshold:
                 return Action.NO_ACTION, action_correct
@@ -522,7 +521,6 @@ class BoxNavigator:
         """Determine the 'direction' to the target based on changes in coordinates."""
 
         # Calculate the change in coordinates
-        print("Previous Target", self.previous_target, "\tCurrent Target", self.target)
         delta_x = self.target.x - self.previous_target.x
         delta_y = self.target.y - self.previous_target.y
 
@@ -576,13 +574,11 @@ class BoxNavigator:
         # TODO: don't hardcode this (how big teleport box will be)
         teleport_box_range = 100
 
-        print("In Action Teleport")
         # Generate the encompassing points of the current box:
         self.dominant_direction = self.determine_direction_to_target()
-        print(self.dominant_direction)
 
-        # if target isn't in the box, we want to update the box
-        # if it is, we continuously teleport in the box until we've updated the target
+        # If target isn't in the box,update the box
+        # If it is, continuously teleport in same box until target is updated
         if not self.target_inside:
             if self.dominant_direction == "left":
                 self.teleport_box_ll = Pt(
@@ -614,7 +610,6 @@ class BoxNavigator:
             self.target_inside = (
                 True if teleport_box.point_is_inside(self.target) else False
             )
-        print("ll: ", self.teleport_box_ll, "\tur: ", self.teleport_box_ur)
 
         # TODO: shorten the next 8 lines
         # Want random pt within this box
@@ -683,11 +678,9 @@ class BoxNavigator:
 
             # This will throw an exception if the boxes do not properly overlap
             self.target = surrounding_boxes[-1].target
-            print("Target updated")
-            
+
             # Update variables specific to teleport
             if self.__compute_action_navigator == self.__compute_action_teleporting:
-                print("Update teleport in update target")
                 self.current_box = surrounding_boxes[-1]
                 self.dominant_direction = self.determine_direction_to_target()
                 self.target_inside = False
