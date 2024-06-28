@@ -9,7 +9,7 @@ from time import sleep
 
 from celluloid import Camera
 from matplotlib import pyplot as plt
-from matplotlib.patches import Arrow, Wedge
+from matplotlib.patches import Arrow, Wedge, Rectangle
 
 from ue5osc import NUM_TEXTURES, Communicator, TexturedSurface
 
@@ -308,6 +308,7 @@ class BoxNavigator:
             self.target_inside = False
             self.dominant_direction = self.determine_direction_to_target()
             self.update_anchors()
+            self.set_teleport_box()
 
         # self.stuck = False  # Can only be True in unreal wrapper
         # self.previous_target = self.position
@@ -354,11 +355,12 @@ class BoxNavigator:
         arrow = Arrow(self.position.x, self.position.y, dxy.x, dxy.y, color="g")
         self.axis.add_patch(arrow)
 
-        # # Check if the environment is of type TeleportingNavigator
-        # if isinstance(self, TeleportingNavigator):
-        #     self.draw_current_past_rectangle(ax, scale)  # Draw the rectangle
-        #     ax.plot(self.anchor_1.x, self.anchor_1.y, "mx")
-        #     ax.plot(self.anchor_2.x, self.anchor_2.y, "mx")
+        # For teleport navigator, want to display teleporting box
+        if self.__compute_action_navigator == self.__compute_action_teleporting:
+            self.draw_current_teleporting_box()  # Draw the rectangle
+            self.axis.plot(self.teleport_box_ll.x, self.teleport_box_ll.y, "mx")
+            # self.axis.plot(self.anchor_1.x, self.anchor_1.y, "mx")
+            # self.axis.plot(self.anchor_2.x, self.anchor_2.y, "mx")
 
     def save_animation(self, filename: str, progress_bar_callback=None) -> None:
         animation = self.camera.animate()
@@ -548,16 +550,20 @@ class BoxNavigator:
         return dominant_direction
 
     def set_teleport_box(self):
+        # Generate the encompassing points of the current box:
+        self.dominant_direction = self.determine_direction_to_target()
+
+        # Calculate lower left and upper right points based on direction
         if self.dominant_direction == "left":
-            self.teleport_box_ll = Pt(
-                self.position.x + self.teleport_box_size, self.current_box.lower
-            )
-            self.teleport_box_ur = Pt(self.position.x, self.current_box.upper)
-        elif self.dominant_direction == "right":
             self.teleport_box_ll = Pt(self.position.x, self.current_box.lower)
             self.teleport_box_ur = Pt(
-                self.position.x - self.teleport_box_size, self.current_box.upper
+                self.position.x + self.teleport_box_size, self.current_box.upper
             )
+        elif self.dominant_direction == "right":
+            self.teleport_box_ll = Pt(
+                self.position.x - self.teleport_box_size, self.current_box.lower
+            )
+            self.teleport_box_ur = Pt(self.position.x, self.current_box.upper)
         elif self.dominant_direction == "up":
             self.teleport_box_ll = Pt(self.current_box.left, self.position.y)
             self.teleport_box_ur = Pt(
@@ -612,14 +618,6 @@ class BoxNavigator:
         return angle
 
     def __action_teleport(self) -> Action:
-        # Generate the encompassing points of the current box:
-        self.dominant_direction = self.determine_direction_to_target()
-
-        # If target isn't in the box,update the box
-        # If it is, continuously teleport in same box until target is updated
-        if not self.target_inside:
-            self.set_teleport_box()
-
         # TODO: shorten the next 8 lines
         # Want random pt within this box
         x = uniform(self.teleport_box_ll.x, self.teleport_box_ur.x)
@@ -641,6 +639,24 @@ class BoxNavigator:
         if self.sync_with_ue:
             self.__sync_ue_position()
             self.__sync_ue_rotation()
+
+        # If target isn't in the box, update the box
+        # otherwise, don't update box until target reached
+        if not self.target_inside:
+            self.set_teleport_box()
+
+    def draw_current_teleporting_box(self) -> None:
+        if self.num_actions_executed != 1:
+            self.axis.add_patch(
+                Rectangle(
+                    self.teleport_box_ll.xy(),
+                    self.teleport_box.width,
+                    self.teleport_box.height,
+                    angle=self.teleport_box.angle_degrees,
+                    facecolor="yellow",
+                    alpha=0.6,  # Transparency level of the rectangle
+                )
+            )
 
     def __compute_action_correct(self) -> Action:
         signed_angle_to_target = self.__compute_signed_angle_to_target()
