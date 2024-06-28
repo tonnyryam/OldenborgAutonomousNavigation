@@ -380,6 +380,7 @@ def main():
 
     # ------------------------------- DATA PLOTTING IN WANDB -------------------------------
     # Plotting where each agent has explored
+    plot_axis.invert_xaxis()
     plot_fig.savefig(str(args.output_dir) + ".png")
     run.log({"Plotted Paths": wandb.Image((str(args.output_dir) + ".png"))})
     wandb_generate_path_plot(all_xs, all_ys, args.num_trials)
