@@ -547,6 +547,38 @@ class BoxNavigator:
 
         return dominant_direction
 
+    def set_teleport_box(self):
+        if self.dominant_direction == "left":
+            self.teleport_box_ll = Pt(
+                self.position.x + self.teleport_box_size, self.current_box.lower
+            )
+            self.teleport_box_ur = Pt(self.position.x, self.current_box.upper)
+        elif self.dominant_direction == "right":
+            self.teleport_box_ll = Pt(self.position.x, self.current_box.lower)
+            self.teleport_box_ur = Pt(
+                self.position.x - self.teleport_box_size, self.current_box.upper
+            )
+        elif self.dominant_direction == "up":
+            self.teleport_box_ll = Pt(self.current_box.left, self.position.y)
+            self.teleport_box_ur = Pt(
+                self.current_box.right, self.position.y + self.teleport_box_size
+            )
+        elif self.dominant_direction == "down":
+            self.teleport_box_ll = Pt(
+                self.current_box.left, self.position.y - self.teleport_box_size
+            )
+            self.teleport_box_ur = Pt(self.current_box.right, self.position.y)
+
+        # Create box using these two Pts
+        teleport_box_ul = Pt(self.teleport_box_ll.x, self.teleport_box_ur.y)
+        self.teleport_box = Box(
+            self.teleport_box_ll, teleport_box_ul, self.teleport_box_ur, None
+        )
+
+        self.target_inside = (
+            True if self.teleport_box.point_is_inside(self.target) else False
+        )
+
     def rotation_anchor(self, current_target: Pt, current_box: Box) -> list[Pt]:
         width_half = current_box.width / 2
         height_half = current_box.height / 2
@@ -586,36 +618,7 @@ class BoxNavigator:
         # If target isn't in the box,update the box
         # If it is, continuously teleport in same box until target is updated
         if not self.target_inside:
-            if self.dominant_direction == "left":
-                self.teleport_box_ll = Pt(
-                    self.position.x + teleport_box_range, self.current_box.lower
-                )
-                self.teleport_box_ur = Pt(self.position.x, self.current_box.upper)
-            elif self.dominant_direction == "right":
-                self.teleport_box_ll = Pt(self.position.x, self.current_box.lower)
-                self.teleport_box_ur = Pt(
-                    self.position.x - teleport_box_range, self.current_box.upper
-                )
-            elif self.dominant_direction == "up":
-                self.teleport_box_ll = Pt(self.current_box.left, self.position.y)
-                self.teleport_box_ur = Pt(
-                    self.current_box.right, self.position.y + teleport_box_range
-                )
-            elif self.dominant_direction == "down":
-                self.teleport_box_ll = Pt(
-                    self.current_box.left, self.position.y - teleport_box_range
-                )
-                self.teleport_box_ur = Pt(self.current_box.right, self.position.y)
-
-            # Create box using these two Pts
-            teleport_box_ul = Pt(self.teleport_box_ll.x, self.teleport_box_ur.y)
-            teleport_box = Box(
-                self.teleport_box_ll, teleport_box_ul, self.teleport_box_ur, None
-            )
-
-            self.target_inside = (
-                True if teleport_box.point_is_inside(self.target) else False
-            )
+            self.set_teleport_box()
 
         # TODO: shorten the next 8 lines
         # Want random pt within this box
