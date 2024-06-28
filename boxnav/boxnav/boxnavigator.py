@@ -186,6 +186,13 @@ def add_box_navigator_arguments(parser: ArgumentParser) -> None:
         help="Randomizes the texture of the walls, floors, and ceilings every N actions.",
     )
 
+    parser.add_argument(
+        "--teleport_box_size",
+        type=int,
+        default=100,
+        help="Size of the teleport box, indicating how far teleport navigator could teleport",
+    )
+
 
 class BoxNavigator:
     def __init__(
@@ -215,6 +222,8 @@ class BoxNavigator:
         self.translation_increment = args.translation_increment
         self.rotation_increment = args.rotation_increment
         self.is_stuck_threshold = 10
+
+        self.teleport_box_size = args.teleport_box_size
 
         self.generating_animation = args.animation_extension is not None
         if self.generating_animation:
@@ -571,9 +580,6 @@ class BoxNavigator:
         return angle
 
     def __action_teleport(self) -> Action:
-        # TODO: don't hardcode this (how big teleport box will be)
-        teleport_box_range = 100
-
         # Generate the encompassing points of the current box:
         self.dominant_direction = self.determine_direction_to_target()
 
