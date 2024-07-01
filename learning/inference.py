@@ -1,3 +1,4 @@
+
 import pathlib
 import platform
 from argparse import ArgumentParser
@@ -6,6 +7,7 @@ from functools import partial
 from math import radians
 from pathlib import Path
 import random
+import itertools
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 import time
@@ -81,14 +83,18 @@ def inference_func(model, image_file: str):
 
 
 colors = ["b", "g", "r", "c", "m", "y", "k"]
-line_styles = ["-", "--", "-.", ":"]
+line_styles = ["-", "--", ":"]  # there is also "-."
+unique_line_combinations = list(itertools.product(colors, line_styles))
+random.shuffle(unique_line_combinations)
 
 
-def plot_trial(axis: Axes, x_values, y_values) -> None:
-    random_color = random.choice(colors)
-    random_line_style = random.choice(line_styles)
+def plot_trial(axis: Axes, x_values, y_values, label: str) -> None:
+    if unique_line_combinations:
+        color, line_style = unique_line_combinations.pop(0)
+    else:
+        color, line_style = random.choice(colors), random.choice(line_styles)
 
-    axis.plot(x_values, y_values, color=random_color, linestyle=random_line_style)
+    axis.plot(x_values, y_values, color=color, linestyle=line_style, label=label)
 
 
 def wandb_generate_path_plot(
@@ -286,7 +292,7 @@ def main():
     all_xs, all_ys = [], []
     execution_times = []
 
-    for trial in range(args.num_trials):
+    for trial in range(1, args.num_trials + 1):
         # Initialize data tracking variables within a single trial
         total_actions_taken, correct_action_taken = 0, 0
         forward_count, rotate_left_count, rotate_right_count = 0, 0, 0
@@ -348,10 +354,10 @@ def main():
 
             elif agent.is_stuck():
                 print("Agent is stuck.")
-                plot_axis.plot(current_x, current_y, "ro")
+                plot_axis.plot(current_x, current_y, "ro", markersize=5)
                 break
 
-        plot_trial(plot_axis, xs, ys)
+        plot_trial(plot_axis, xs, ys, "Trial " + str(trial))
         all_xs.append(xs)
         all_ys.append(ys)
 
@@ -381,7 +387,17 @@ def main():
     # ------------------------------- DATA PLOTTING IN WANDB -------------------------------
     # Plotting where each agent has explored
     plot_axis.invert_xaxis()
+    plot_axis.legend()
+    plot_axis.set_title(
+        "Plotted Paths of "
+        + str(args.num_trials)
+        + " trials using\n"
+        + str(wandb_model)
+    )
+    plot_axis.set_xlabel("Unreal Engine x-coordinate", fontweight="bold")
+    plot_axis.set_ylabel("Unreal Engine y-coordinate", fontweight="bold")
     plot_fig.savefig(str(args.output_dir) + ".png")
+
     run.log({"Plotted Paths": wandb.Image((str(args.output_dir) + ".png"))})
     wandb_generate_path_plot(all_xs, all_ys, args.num_trials)
 
