@@ -11,6 +11,7 @@ from pathlib import Path
 # TODO: log plots as artifacts?
 # import matplotlib.pyplot as plt
 import torch
+import wandb
 from fastai.callback.wandb import WandbCallback
 from fastai.data.all import (
     CategoryBlock,
@@ -23,14 +24,8 @@ from fastai.losses import CrossEntropyLossFlat
 from fastai.vision.augment import Resize
 from fastai.vision.data import ImageBlock, ImageDataLoaders
 from fastai.vision.learner import Learner, accuracy, vision_learner
-from fastai.vision.models import resnet18, resnet34
 from fastai.vision.utils import get_image_files
 from torch import nn
-
-import wandb
-
-# NOTE: we can change/add to this list
-compared_models = {"resnet18": resnet18, "resnet34": resnet34}
 
 
 def parse_args() -> Namespace:
@@ -219,19 +214,32 @@ def run_experiment(args: Namespace, run, dls):
 def train_model(dls: DataLoaders, args: Namespace, run, rep: int):
     """Train the cmd_model using the provided data and hyperparameters."""
 
+    valid_architectures = [
+        "resnet18.a1_in1k",
+        "mobilenetv4_conv_small.e2400_r224_in1k",
+        "efficientnet_b3.ra2_in1k",
+        "convnextv2_atto.fcmae",
+        "convnextv2_base.fcmae_ft_in22k_in1k",
+        "vit_base_patch16_224.augreg2_in21k_ft_in1k",
+    ]
+
+    if args.model_arch not in valid_architectures:
+        raise ValueError(f"Invalid model architecture: {args.model_arch}")
+
     if args.use_command_image:
-        net = ImageCommandModel(args.model_arch, pretrained=args.pretrained)
-        learn = Learner(
-            dls,
-            net,
-            loss_func=CrossEntropyLossFlat(),
-            metrics=accuracy,
-            cbs=WandbCallback(log_model=True),
-        )
+        raise NotImplementedError("ImageCommandModel not implemented.")
+        # net = ImageCommandModel(args.model_arch, pretrained=args.pretrained)
+        # learn = Learner(
+        #     dls,
+        #     net,
+        #     loss_func=CrossEntropyLossFlat(),
+        #     metrics=accuracy,
+        #     cbs=WandbCallback(log_model=True),
+        # )
     else:
         learn = vision_learner(
             dls,
-            compared_models[args.model_arch],
+            args.model_arch,
             pretrained=args.pretrained,
             metrics=accuracy,
             cbs=WandbCallback(log_model=True),
