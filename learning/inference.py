@@ -432,7 +432,13 @@ def main():
     # Generate efficiency regression plot in matplotlib and upload to wandb
     regression_fig = generate_efficiency_regression(inference_action_table)
     regression_fig.savefig(str(args.output_dir) + "_efficiency.png")
-    run.log({"Plotted Paths": wandb.Image((str(args.output_dir) + "_efficiency.png"))})
+    run.log(
+        {
+            "Efficiency Linear Regression": wandb.Image(
+                (str(args.output_dir) + "_efficiency.png")
+            )
+        }
+    )
 
     # Generate and upload timer statistics (histogram + table)
     wandb_generate_timer_stats(run, inference_action_table)
