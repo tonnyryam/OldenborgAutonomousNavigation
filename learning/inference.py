@@ -309,7 +309,7 @@ def main():
     pbar_manager = enlighten.get_manager()
     trials_pbar = pbar_manager.counter(total=args.num_trials, desc="Trials: ")
 
-    # Dictionary to help store action moves in confusion matrix
+    # Dictionary to help store action moves in confusion matrix (only takes int values)
     action_to_confusion = {
         Action.FORWARD: 0,
         Action.ROTATE_RIGHT: 1,
@@ -321,18 +321,12 @@ def main():
     box_env.display(plot_axis)
 
     # Initialize data tracking variables across the entire run
-    # inference_data = []
-
     inference_action_data = []
     executed_actions, correct_actions = [], []
     all_xs, all_ys = [], []
 
     for trial_num in range(1, args.num_trials + 1):
-        # Initialize data tracking variables within a single trial
-        # total_actions_taken, correct_action_taken = 0, 0
-        # forward_count, rotate_left_count, rotate_right_count = 0, 0, 0
-        # incorrect_left_count, incorrect_right_count = 0, 0
-        xs, ys = [], []
+        xs, ys = [], []  # Track every location of the agent to plot
 
         actions_pbar = pbar_manager.counter(total=args.max_actions, desc="Actions: ")
         navigation_pbar = pbar_manager.counter(total=100, desc="Completion: ")
@@ -345,30 +339,10 @@ def main():
                 print(e)
                 break
 
+            # Count executed/correct actions to compare in confusion matrix
             if executed_action != Action.NO_ACTION:
                 executed_actions.append(action_to_confusion[executed_action])
                 correct_actions.append(action_to_confusion[correct_action])
-
-            # total_actions_taken += 1
-            # correct_action_taken += 1 if executed_action == correct_action else 0
-            # if (
-            #     executed_action == Action.ROTATE_LEFT
-            #     and correct_action == Action.ROTATE_RIGHT
-            # ):
-            #     incorrect_left_count += 1
-            # elif (
-            #     executed_action == Action.ROTATE_RIGHT
-            #     and correct_action == Action.ROTATE_LEFT
-            # ):
-            #     incorrect_right_count += 1
-
-            # match executed_action:
-            #     case Action.FORWARD:
-            #         forward_count += 1
-            #     case Action.ROTATE_LEFT:
-            #         rotate_left_count += 1
-            #     case Action.ROTATE_RIGHT:
-            #         rotate_right_count += 1
 
             current_x, current_y = agent.position.xy()
             xs.append(current_x)
@@ -402,24 +376,12 @@ def main():
             ]
             inference_action_data.append(action_data)
 
+        # Plot where the agent has been durin this trial
         plot_trial(plot_axis, xs, ys, "Trial " + str(trial_num))
         all_xs.append(xs)
         all_ys.append(ys)
 
-        # run_data = [
-        #     trial_num,
-        #     agent.get_percent_through_env(),
-        #     total_actions_taken,
-        #     correct_action_taken,
-        #     forward_count,
-        #     rotate_left_count,
-        #     rotate_right_count,
-        #     incorrect_left_count,
-        #     incorrect_right_count,
-        #     total_actions_taken / agent.get_percent_through_env(),
-        # ]
-        # inference_data.append(run_data)
-
+        # Reset the agent and all tracking bars before the next trial
         agent.reset()
         trials_pbar.update()
         actions_pbar.close()
@@ -466,21 +428,6 @@ def main():
         columns=action_data_labels, data=inference_action_data
     )
     run.log({"Inference Data per Action": inference_action_table})
-
-    # table_cols = [
-    #     "Trial",
-    #     "Percent through Environment",
-    #     "Total Actions Taken",
-    #     "Correct Actions Taken",
-    #     "Forward Action Taken",
-    #     "Rotate Left Action Taken",
-    #     "Rotate Right Action Taken",
-    #     "Incorrect Left Taken",
-    #     "Incorrect Right Taken",
-    #     "# Actions per Percent of Env",
-    # ]
-    # inference_data_table = wandb.Table(columns=table_cols, data=inference_data)
-    # run.log({"Inference Data": inference_data_table})
 
     # Generate efficiency regression plot in matplotlib and upload to wandb
     regression_fig = generate_efficiency_regression(inference_action_table)
