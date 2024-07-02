@@ -117,7 +117,7 @@ def wandb_generate_path_plot(
                 xs=all_xs,
                 ys=all_ys,
                 keys=["Trial " + str(trial_num) for trial_num in range(num_trials)],
-                title="Tracking where Agent has been",
+                title="Tracking Agent Location per Trial",
                 xname="x location",
             )
         }
@@ -129,7 +129,9 @@ def wandb_generate_timer_stats(wandb_run, inference_data_table) -> None:
     wandb.log(
         {
             "Histogram of Values": wandb.plot.histogram(
-                inference_data_table, "Inference Time"
+                inference_data_table,
+                "Inference Time",
+                title="Distribution of Prediction Time per Action",
             )
         }
     )
@@ -164,6 +166,7 @@ def wandb_generate_confusion_matrix(
     wandb.log(
         {
             "conf_mat": wandb.plot.confusion_matrix(
+                title="Confusion Matrix of Inference Predicted Action vs Correct Action",
                 probs=None,
                 preds=executed_actions,
                 y_true=correct_actions,
@@ -410,7 +413,6 @@ def main():
     wandb_generate_path_plot(all_xs, all_ys, args.num_trials)
 
     # Confusion Matrix
-    # wandb_generate_timer_stats(run, inference_times)
     wandb_generate_confusion_matrix(executed_actions, correct_actions)
 
     # Create table in Wandb tracking all data collected during the run
