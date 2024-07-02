@@ -1,4 +1,3 @@
-
 import pathlib
 import platform
 from argparse import ArgumentParser
@@ -59,11 +58,23 @@ fastai_to_boxnav = {
 
 action_prev = Action.NO_ACTION
 
+inference_times = []
+image_file_names = []
+
 
 def inference_func(model, image_file: str):
     global action_prev
 
+    # store image file name for data collection
+    cut_file_name = image_file.rsplit("/", 1)[-1]
+    image_file_names.append(cut_file_name)
+
+    start_time = time.time()
+
     action_now, action_index, action_probs = model.predict(image_file)
+
+    end_time = time.time()
+    inference_times.append(end_time - start_time)
 
     action_now = fastai_to_boxnav[action_now]
 
@@ -287,56 +298,54 @@ def main():
     box_env.display(plot_axis)
 
     # Initialize data tracking variables across the entire run
-    inference_data = []
+    # inference_data = []
+
+    inference_action_data = []
     executed_actions, correct_actions = [], []
     all_xs, all_ys = [], []
-    execution_times = []
 
-    for trial in range(1, args.num_trials + 1):
+    for trial_num in range(1, args.num_trials + 1):
         # Initialize data tracking variables within a single trial
-        total_actions_taken, correct_action_taken = 0, 0
-        forward_count, rotate_left_count, rotate_right_count = 0, 0, 0
-        incorrect_left_count, incorrect_right_count = 0, 0
+        # total_actions_taken, correct_action_taken = 0, 0
+        # forward_count, rotate_left_count, rotate_right_count = 0, 0, 0
+        # incorrect_left_count, incorrect_right_count = 0, 0
         xs, ys = [], []
 
         actions_pbar = pbar_manager.counter(total=args.max_actions, desc="Actions: ")
         navigation_pbar = pbar_manager.counter(total=100, desc="Completion: ")
 
-        for _ in range(args.max_actions):
-            start_time = time.time()
+        for action_num in range(1, args.max_actions + 1):
             try:
                 executed_action, correct_action = agent.execute_navigator_action()
 
             except Exception as e:
                 print(e)
                 break
-            end_time = time.time()
-            execution_times.append([end_time - start_time])
 
             if executed_action != Action.NO_ACTION:
                 executed_actions.append(action_to_confusion[executed_action])
                 correct_actions.append(action_to_confusion[correct_action])
 
-            total_actions_taken += 1
-            correct_action_taken += 1 if executed_action == correct_action else 0
-            if (
-                executed_action == Action.ROTATE_LEFT
-                and correct_action == Action.ROTATE_RIGHT
-            ):
-                incorrect_left_count += 1
-            elif (
-                executed_action == Action.ROTATE_RIGHT
-                and correct_action == Action.ROTATE_LEFT
-            ):
-                incorrect_right_count += 1
+            # total_actions_taken += 1
+            # correct_action_taken += 1 if executed_action == correct_action else 0
+            # if (
+            #     executed_action == Action.ROTATE_LEFT
+            #     and correct_action == Action.ROTATE_RIGHT
+            # ):
+            #     incorrect_left_count += 1
+            # elif (
+            #     executed_action == Action.ROTATE_RIGHT
+            #     and correct_action == Action.ROTATE_LEFT
+            # ):
+            #     incorrect_right_count += 1
 
-            match executed_action:
-                case Action.FORWARD:
-                    forward_count += 1
-                case Action.ROTATE_LEFT:
-                    rotate_left_count += 1
-                case Action.ROTATE_RIGHT:
-                    rotate_right_count += 1
+            # match executed_action:
+            #     case Action.FORWARD:
+            #         forward_count += 1
+            #     case Action.ROTATE_LEFT:
+            #         rotate_left_count += 1
+            #     case Action.ROTATE_RIGHT:
+            #         rotate_right_count += 1
 
             current_x, current_y = agent.position.xy()
             xs.append(current_x)
@@ -357,23 +366,36 @@ def main():
                 plot_axis.plot(current_x, current_y, "ro", markersize=5)
                 break
 
-        plot_trial(plot_axis, xs, ys, "Trial " + str(trial))
+            action_data = [
+                trial_num,
+                action_num,
+                str(executed_action),
+                str(correct_action),
+                inference_times[-1],  # get most recently added inference time
+                current_x,
+                current_y,
+                agent.get_percent_through_env(),
+                image_file_names[-1],
+            ]
+            inference_action_data.append(action_data)
+
+        plot_trial(plot_axis, xs, ys, "Trial " + str(trial_num))
         all_xs.append(xs)
         all_ys.append(ys)
 
-        run_data = [
-            trial,
-            agent.get_percent_through_env(),
-            total_actions_taken,
-            correct_action_taken,
-            forward_count,
-            rotate_left_count,
-            rotate_right_count,
-            incorrect_left_count,
-            incorrect_right_count,
-            total_actions_taken / agent.get_percent_through_env(),
-        ]
-        inference_data.append(run_data)
+        # run_data = [
+        #     trial_num,
+        #     agent.get_percent_through_env(),
+        #     total_actions_taken,
+        #     correct_action_taken,
+        #     forward_count,
+        #     rotate_left_count,
+        #     rotate_right_count,
+        #     incorrect_left_count,
+        #     incorrect_right_count,
+        #     total_actions_taken / agent.get_percent_through_env(),
+        # ]
+        # inference_data.append(run_data)
 
         agent.reset()
         trials_pbar.update()
@@ -385,7 +407,7 @@ def main():
     pbar_manager.stop()
 
     # ------------------------------- DATA PLOTTING IN WANDB -------------------------------
-    # Plotting where each agent has explored
+    # Plotting/Tracking where each agent has explored
     plot_axis.invert_xaxis()
     plot_axis.legend()
     plot_axis.set_title(
@@ -401,31 +423,48 @@ def main():
     run.log({"Plotted Paths": wandb.Image((str(args.output_dir) + ".png"))})
     wandb_generate_path_plot(all_xs, all_ys, args.num_trials)
 
-    wandb_generate_timer_stats(execution_times)
+    # Confusion Matrix
+    # wandb_generate_timer_stats(run, inference_times)
     wandb_generate_confusion_matrix(executed_actions, correct_actions)
 
     # Create table in Wandb tracking all data collected during the run
-    table_cols = [
-        "Trial",
+    action_data_labels = [
+        "Trial Num",
+        "Action Num",
+        "Executed Action",
+        "Correct Action",
+        "Inference Time",
+        "X Coordinate",
+        "Y Coordinate",
         "Percent through Environment",
-        "Total Actions Taken",
-        "Correct Actions Taken",
-        "Forward Action Taken",
-        "Rotate Left Action Taken",
-        "Rotate Right Action Taken",
-        "Incorrect Left Taken",
-        "Incorrect Right Taken",
-        "# Actions per Percent of Env",
+        "Image filename",
     ]
-    inference_data_table = wandb.Table(columns=table_cols, data=inference_data)
-    run.log({"Inference Data": inference_data_table})
+    inference_action_table = wandb.Table(
+        columns=action_data_labels, data=inference_action_data
+    )
+    run.log({"Inference Data per Action": inference_action_table})
 
-    wandb_generate_efficiency_plot(inference_data_table)
+    # table_cols = [
+    #     "Trial",
+    #     "Percent through Environment",
+    #     "Total Actions Taken",
+    #     "Correct Actions Taken",
+    #     "Forward Action Taken",
+    #     "Rotate Left Action Taken",
+    #     "Rotate Right Action Taken",
+    #     "Incorrect Left Taken",
+    #     "Incorrect Right Taken",
+    #     "# Actions per Percent of Env",
+    # ]
+    # inference_data_table = wandb.Table(columns=table_cols, data=inference_data)
+    # run.log({"Inference Data": inference_data_table})
+
+    # Generate efficiency_plot(inference_data_table)
 
     # Create subtable containing only runs where the agent completed target
-    completed_runs = [row for row in inference_data_table.data if row[1] >= 98.0]
-    completed_runs_table = wandb.Table(columns=table_cols, data=completed_runs)
-    run.log({"Completed table": completed_runs_table})
+    # completed_runs = [row for row in inference_data_table.data if row[1] >= 98.0]
+    # completed_runs_table = wandb.Table(columns=table_cols, data=completed_runs)
+    # run.log({"Completed table": completed_runs_table})
 
     # BRAINSTORM METRICS FOR **ONLY COMPLETE** RUNS
 
