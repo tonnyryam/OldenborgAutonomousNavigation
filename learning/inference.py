@@ -124,19 +124,18 @@ def wandb_generate_path_plot(
     )
 
 
-def wandb_generate_timer_stats(wandb_run, execution_times: list[float]) -> None:
+def wandb_generate_timer_stats(wandb_run, inference_data_table) -> None:
     # Distribution of how long it takes to execute actions
-    time_table = wandb.Table(data=execution_times, columns=["Time Estimate"])
-    fields = {"value": "Time Estimate", "title": "Executed Timer Histogram"}
-    histogram = wandb.plot_table(
-        vega_spec_name="wandb/histogram_small_bins",
-        data_table=time_table,
-        fields=fields,
+    wandb.log(
+        {
+            "Histogram of Values": wandb.plot.histogram(
+                inference_data_table, "Inference Time"
+            )
+        }
     )
-    wandb.log({"Executed Timer Histogram": histogram})
 
     # Calculate summary statistics for action execution times
-    execution_times_array = np.array(execution_times)
+    execution_times_array = np.array(inference_data_table.get_column("Inference Time"))
     percentiles = np.percentile(execution_times_array, [25, 50, 75])
 
     summary_stats = [
@@ -487,6 +486,9 @@ def main():
     regression_fig = generate_efficiency_regression(inference_action_table)
     regression_fig.savefig(str(args.output_dir) + "_efficiency.png")
     run.log({"Plotted Paths": wandb.Image((str(args.output_dir) + "_efficiency.png"))})
+
+    # Generate and upload timer statistics (histogram + table)
+    wandb_generate_timer_stats(run, inference_action_table)
 
     # Create subtable containing only runs where the agent completed target
     # completed_runs = [row for row in inference_data_table.data if row[1] >= 98.0]
