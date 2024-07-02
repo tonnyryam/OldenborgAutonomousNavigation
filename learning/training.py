@@ -23,7 +23,13 @@ from fastai.data.all import (
 from fastai.losses import CrossEntropyLossFlat
 from fastai.vision.augment import Resize
 from fastai.vision.data import ImageBlock, ImageDataLoaders
-from fastai.vision.learner import Learner, accuracy, vision_learner
+from fastai.vision.learner import (
+    Learner,
+    accuracy,
+    create_timm_model,
+    default_split,
+    vision_learner,
+)
 from fastai.vision.utils import get_image_files
 from torch import nn
 
@@ -224,8 +230,8 @@ def train_model(dls: DataLoaders, args: Namespace, run, rep: int):
         raise NotImplementedError("ImageCommandModel not implemented.")
         # net = ImageCommandModel(args.model_arch, pretrained=args.pretrained)
         # learn = Learner(
-        #     dls,
-        #     net,
+        #     dls=dls,
+        #     model=net,
         #     loss_func=CrossEntropyLossFlat(),
         #     metrics=accuracy,
         #     cbs=WandbCallback(log_model=True),
@@ -263,9 +269,12 @@ class ImageCommandModel(nn.Module):
 
     def __init__(self, architecture_name: str, pretrained: bool):
         super(ImageCommandModel, self).__init__()
-        cnn_constructor = compared_models[architecture_name]
-        weights = "IMAGENET1K_V1" if pretrained else None
-        self.cnn = cnn_constructor(weights=weights)
+        # cnn_constructor = compared_models[architecture_name]
+        # weights = "IMAGENET1K_V1" if pretrained else None
+        # self.cnn = cnn_constructor(weights=weights)
+        model, cfg = create_timm_model(architecture_name, 3, default_split, pretrained)
+        # _timm_norm(dls, cfg, pretrained, n_in=3)
+        self.cnn = model
 
         # Layers to combine image and command input
         self.fc1 = nn.Linear(self.cnn.fc.out_features + 1, 512)
