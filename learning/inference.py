@@ -303,6 +303,7 @@ def main():
     agent = BoxNavigator(
         box_env,
         args,
+        rotation=radians(90),
         vision_callback=partial(inference_func, model),
     )
 

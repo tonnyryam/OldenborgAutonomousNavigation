@@ -206,7 +206,7 @@ class BoxNavigator:
                 )
             )
         if rotation is None:
-            rotation = radians(90)
+            rotation = radians(0)
         self.initial_rotation = rotation
         self.final_target = self.env.boxes[-1].target
 

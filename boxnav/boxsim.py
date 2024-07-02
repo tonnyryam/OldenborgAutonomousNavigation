@@ -26,7 +26,7 @@ def simulate(args: Namespace) -> None:
     box_env = BoxEnv(boxes)
 
     # TODO: use context manager for UE connection?
-    agent = BoxNavigator(box_env, args)
+    agent = BoxNavigator(box_env, args, rotation=radians(90))
 
     pbar_manager = enlighten.get_manager()
     actions_pbar = pbar_manager.counter(total=args.max_total_actions, desc="   Actions")
