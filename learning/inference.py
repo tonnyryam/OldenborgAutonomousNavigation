@@ -174,18 +174,42 @@ def wandb_generate_confusion_matrix(
     )
 
 
-def wandb_generate_efficiency_plot(inference_data_table) -> None:
-    # Line plot to assess efficiency of model
-    wandb.log(
-        {
-            "Efficiency": wandb.plot.line(
-                inference_data_table,
-                "# Actions per Percent of Env",
-                "Percent through Environment",
-                title="Percent through environment vs. # of Actions per percent of Environment",
-            )
-        }
+def generate_efficiency_regression(inference_data_table) -> None:
+    regression_fig, regression_axis = plt.subplots()
+
+    action_num = np.array(inference_data_table.get_column("Action Num"))
+    percent_through = np.array(
+        inference_data_table.get_column("Percent through Environment")
     )
+
+    regression_axis.plot(action_num, percent_through, "o", markersize=3)
+
+    # Calculate and plot the regression model
+    m, b = np.polyfit(action_num, percent_through, 1)
+    regression_axis.plot(
+        action_num,
+        m * action_num + b,
+    )
+
+    # Calculate R^2 (correlation) value and print to plot
+    correlation_xy = np.corrcoef(action_num, percent_through)[0, 1]
+    r_squared = correlation_xy**2
+    regression_axis.text(
+        0.05,
+        0.95,
+        f"$R^2$ = {r_squared:.2f} \n y = {m:.2f}x + {b:.2f}",
+        transform=regression_axis.transAxes,
+        fontsize=12,
+        verticalalignment="top",
+    )
+
+    regression_axis.set_title(
+        "Regression Model of Percent through Environment vs. Action Number"
+    )
+    regression_axis.set_xlabel("Action Number", fontweight="bold")
+    regression_axis.set_ylabel("Percent through Environment", fontweight="bold")
+
+    return regression_fig
 
 
 def parse_args():
@@ -459,7 +483,10 @@ def main():
     # inference_data_table = wandb.Table(columns=table_cols, data=inference_data)
     # run.log({"Inference Data": inference_data_table})
 
-    # Generate efficiency_plot(inference_data_table)
+    # Generate efficiency regression plot in matplotlib and upload to wandb
+    regression_fig = generate_efficiency_regression(inference_action_table)
+    regression_fig.savefig(str(args.output_dir) + "_efficiency.png")
+    run.log({"Plotted Paths": wandb.Image((str(args.output_dir) + "_efficiency.png"))})
 
     # Create subtable containing only runs where the agent completed target
     # completed_runs = [row for row in inference_data_table.data if row[1] >= 98.0]
