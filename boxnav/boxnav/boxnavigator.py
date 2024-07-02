@@ -15,7 +15,6 @@ from ue5osc import NUM_TEXTURES, Communicator, TexturedSurface
 
 from .box import Pt, Box
 from .boxenv import BoxEnv
-from boxnav.environments import oldenborg_boxes as boxes
 
 
 # TODO: consider change from ROTATE_LEFT and ROTATE_RIGHT to ROTATE_CCW and ROTATE_CW
@@ -90,22 +89,6 @@ class ImageQuality(IntEnum):
 
 
 def add_box_navigator_arguments(parser: ArgumentParser) -> None:
-    starting_box = boxes[0]
-    initial_x = starting_box.left + starting_box.width / 2
-    initial_y = starting_box.lower + 50
-
-    parser.add_argument(
-        "--initial_position",
-        type=Pt,
-        default=Pt(initial_x, initial_y),
-        help="Set the starting position of the agent",
-    )
-    parser.add_argument(
-        "--initial_rotation",
-        type=float,
-        default=radians(90),
-        help="Set the starting rotation of the agent",
-    )
     parser.add_argument(
         "--translation_increment",
         type=float,
@@ -199,10 +182,19 @@ class BoxNavigator:
         self,
         env: BoxEnv,
         args: Namespace,
+        position: Pt | None = None,
+        rotation: float | None = None,
         vision_callback: Callable[[str], Action] | None = None,
     ) -> None:
         self.env = env
-        self.initial_position = args.initial_position
+        if position is None:
+            # Set default initial position to the middle of the first box
+            starting_box = self.env.boxes[0]
+            initial_x = starting_box.left + starting_box.width / 2
+            initial_y = starting_box.lower + starting_box.height / 2
+            position = Pt(initial_x, initial_y)
+        self.initial_position = position
+
         self.env_distances = [
             Pt.distance(self.initial_position, self.env.boxes[0].target)
         ]
@@ -213,7 +205,9 @@ class BoxNavigator:
                     self.env.boxes[i + 1].target,
                 )
             )
-        self.initial_rotation = args.initial_rotation
+        if rotation is None:
+            rotation = radians(90)
+        self.initial_rotation = rotation
         self.final_target = self.env.boxes[-1].target
 
         # TODO: find appropriate values for these
@@ -358,9 +352,9 @@ class BoxNavigator:
         # For teleport navigator, want to display teleporting box
         if self.__compute_action_navigator == self.__compute_action_teleporting:
             self.draw_current_teleporting_box()  # Draw the rectangle
-            self.axis.plot(self.teleport_box_ll.x, self.teleport_box_ll.y, "mx")
             # self.axis.plot(self.anchor_1.x, self.anchor_1.y, "mx")
             # self.axis.plot(self.anchor_2.x, self.anchor_2.y, "mx")
+            # self.axis.plot(self.teleport_box_ll.x, self.teleport_box_ll.y, "mx")
 
     def save_animation(self, filename: str, progress_bar_callback=None) -> None:
         animation = self.camera.animate()
