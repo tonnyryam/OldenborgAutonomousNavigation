@@ -7,6 +7,7 @@ from math import radians
 from pathlib import Path, PurePath
 
 import enlighten
+from os import chdir
 
 import wandb
 from fastai.callback.wandb import WandbCallback
@@ -295,13 +296,15 @@ def main():
     inference_data_table = wandb.Table(columns=table_cols, data=inference_data)
     run.log({"Inference Data": inference_data_table})
 
+    chdir(agent.image_directory)
+
     video_name = PurePath(agent.image_directory).stem
     filelist_name = video_name + "_filelist.txt"
 
     image_files = sorted(agent.image_directory.glob("*.png"))
     with open(filelist_name, "w") as file_out:
         for file in image_files:
-            file_out.write(f"file '{Path(file)}'\n")
+            file_out.write(f"file '{file}'\nduration 0.0333\n")
 
     sprun(
         [
@@ -322,8 +325,7 @@ def main():
             # "-pix_fmt",
             # "yuv420p",
             # the following specifies where the output video will be saved
-            agent.image_directory / (video_name + ".mp4"),
-            # agent.image_directory / (video_name),
+            (video_name + ".mp4"),
         ]
     )
 
