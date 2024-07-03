@@ -3,17 +3,16 @@ from enum import Enum, IntEnum
 from math import atan2, cos, degrees, inf, radians, sin
 from pathlib import Path
 from random import choice, random, randrange, uniform
-from time import sleep
 from typing import Callable
 from time import sleep
 
 from celluloid import Camera
 from matplotlib import pyplot as plt
-from matplotlib.patches import Arrow, Wedge, Rectangle
+from matplotlib.patches import Arrow, Rectangle, Wedge
 
 from ue5osc import NUM_TEXTURES, Communicator, TexturedSurface
 
-from .box import Pt, Box
+from .box import Box, Pt
 from .boxenv import BoxEnv
 
 
@@ -118,6 +117,13 @@ def add_box_navigator_arguments(parser: ArgumentParser) -> None:
     )
 
     parser.add_argument(
+        "--teleport_box_size",
+        type=int,
+        default=100,
+        help="Size of the teleport box, indicating how far teleport navigator could teleport",
+    )
+
+    parser.add_argument(
         "--animation_extension",
         type=str,
         help="Output format for animation (no animation created if not provided).",
@@ -187,28 +193,24 @@ class BoxNavigator:
         vision_callback: Callable[[str], Action] | None = None,
     ) -> None:
         self.env = env
+
+        starting_box = self.env.boxes[0]
+        self.final_target = self.env.boxes[-1].target
+
         if position is None:
             # Set default initial position to the middle of the first box
-            starting_box = self.env.boxes[0]
-            initial_x = starting_box.left + starting_box.width / 2
-            initial_y = starting_box.lower + starting_box.height / 2
-            position = Pt(initial_x, initial_y)
-        self.initial_position = position
+            x = starting_box.left + starting_box.width / 2
+            y = starting_box.lower + starting_box.height / 2
+            center_of_starting_box = Pt(x, y)
 
-        self.env_distances = [
-            Pt.distance(self.initial_position, self.env.boxes[0].target)
-        ]
+        self.initial_position = position if position else center_of_starting_box
+        self.initial_rotation = rotation if rotation else 0
+
+        self.env_distances = [Pt.distance(self.initial_position, starting_box.target)]
         for i in range(len(self.env.boxes) - 1):
             self.env_distances.append(
-                Pt.distance(
-                    self.env.boxes[i].target,
-                    self.env.boxes[i + 1].target,
-                )
+                Pt.distance(self.env.boxes[i].target, self.env.boxes[i + 1].target)
             )
-        if rotation is None:
-            rotation = radians(0)
-        self.initial_rotation = rotation
-        self.final_target = self.env.boxes[-1].target
 
         # TODO: find appropriate values for these
         self.target_threshold = args.distance_threshold
@@ -276,10 +278,11 @@ class BoxNavigator:
                 self.image_extension = args.image_extension
                 self.images_saved = 0
 
+        # Both immediately incremented in reset()
         self.num_resets = 0
         self.trial_num = 0
 
-        # Initial delay is 1s so that UE can get warmed up
+        # Set a longer delay for first image capture so that UE can get warmed up
         self.image_delay = 3
 
         # All other member variables are initialized in reset()
@@ -297,6 +300,7 @@ class BoxNavigator:
 
         self.is_stuck_counter = 0
 
+        # TODO: this is clunky, maybe we should save args.navigator as a member variable
         if self.__compute_action_navigator == self.__compute_action_teleporting:
             self.current_box = self.env.boxes[0]
             self.target_inside = False
@@ -304,26 +308,19 @@ class BoxNavigator:
             self.update_anchors()
             self.set_teleport_box()
 
-        # self.stuck = False  # Can only be True in unreal wrapper
-        # self.previous_target = self.position
-        # self.current_box = self.env.boxes[0]  # Start in the first box
-        # self.dominant_direction = self.determine_direction_to_target(self.target)
-        # self.anchor_1 = self.rotation_anchor(self.target, self.current_box)[0]
-        # self.anchor_2 = self.rotation_anchor(self.target, self.current_box)[1]
-
         if self.sync_with_ue:
             try:
-                self.ue.set_resolution(self.image_resolution)
-                self.ue.set_quality(self.image_quality)
-                self.ue.set_raycast_length(self.translation_increment)
+                self.ue.set_resolution(self.image_resolution, delay=0.1)
+                self.ue.set_quality(self.image_quality, delay=0.1)
+                self.ue.set_raycast_length(self.translation_increment, delay=0.1)
 
             except TimeoutError:
                 self.ue.close_osc()
-                print("Check if UE packaged game is running.")
+                print("Error when connecting to UE. See if UE is running.")
                 raise SystemExit
 
-            # Reset z coordinates with a 2s delay to allow the reset before moving on
-            self.ue.reset(2)
+            # NOTE: we need to call reset since it sets the vertical position
+            self.ue.reset(delay=2)
 
             self.__sync_ue_rotation()
             self.__sync_ue_position()
@@ -366,6 +363,7 @@ class BoxNavigator:
             self.display()
             self.axis.invert_xaxis()
             self.camera.snap()
+            # TODO: save the figure for overlay video
 
     def at_final_target(self) -> bool:
         return Pt.distance(self.position, self.final_target) < self.target_threshold
@@ -422,6 +420,7 @@ class BoxNavigator:
 
         # Randomize the texture of the walls, floors, and ceilings
         if self.sync_with_ue:
+            # TODO: check this if statement, it seems clunky (is != inf necessary?)
             if (
                 self.num_actions_executed != 0
                 and self.randomize_interval != inf
@@ -438,7 +437,7 @@ class BoxNavigator:
             # Compute *potential* navigator action
             action_navigator = self.__compute_action_navigator()
 
-            # Check if navigator action is possible (rotation should not reset stuck counter)
+            # Check if navigator action is possible (only translations can get stuck)
             if action_navigator in [Action.FORWARD, Action.BACKWARD]:
                 if self.__move_is_possible(action_navigator):
                     self.is_stuck_counter = 0
@@ -455,7 +454,6 @@ class BoxNavigator:
         return action_navigator, action_correct
 
     def __move_is_possible(self, action: Action) -> bool:
-        # Rotations are always possible
         if action in [Action.ROTATE_LEFT, Action.ROTATE_RIGHT, Action.TELEPORT]:
             return True
 
@@ -611,7 +609,7 @@ class BoxNavigator:
         angle = atan2(random_y - self.position.y, random_x - self.position.x)
         return angle
 
-    def __action_teleport(self) -> Action:
+    def __action_teleport(self) -> None:
         # TODO: shorten the next 8 lines
         # Want random pt within this box
         x = uniform(self.teleport_box_ll.x, self.teleport_box_ur.x)
@@ -640,6 +638,7 @@ class BoxNavigator:
             self.set_teleport_box()
 
     def draw_current_teleporting_box(self) -> None:
+        # TODO: why not if num_actions_executed == 1?
         if self.num_actions_executed != 1:
             self.axis.add_patch(
                 Rectangle(

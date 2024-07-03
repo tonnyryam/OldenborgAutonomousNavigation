@@ -1,5 +1,8 @@
+import itertools
 import pathlib
 import platform
+import random
+import time
 from argparse import ArgumentParser
 from contextlib import contextmanager
 from functools import partial
@@ -13,13 +16,14 @@ import time
 import numpy as np
 
 import enlighten
-
+import matplotlib.pyplot as plt
+import numpy as np
 import wandb
 from fastai.callback.wandb import WandbCallback
 from fastai.vision.learner import load_learner
+from matplotlib.axes import Axes
 from utils import y_from_filename  # noqa: F401 (needed for fastai load_learner)
 
-from boxnav.box import Pt
 from boxnav.boxenv import BoxEnv
 from boxnav.boxnavigator import (
     Action,
@@ -66,6 +70,7 @@ def inference_func(model, image_file: str):
     global action_prev
 
     # store image file name for data collection
+    # TODO: change to use pathlib
     cut_file_name = image_file.rsplit("/", 1)[-1]
     image_file_names.append(cut_file_name)
 
@@ -150,6 +155,7 @@ def wandb_generate_timer_stats(wandb_run, inference_data_table) -> None:
         ["50th Percentile", percentiles[1]],
         ["75th Percentile", percentiles[2]],
     ]
+
     wandb_run.log(
         {
             "Inference Execute Action Timer Data": wandb.Table(
@@ -381,7 +387,7 @@ def main():
             ]
             inference_action_data.append(action_data)
 
-        # Plot where the agent has been durin this trial
+        # Plot where the agent has been during this trial
         plot_trial(plot_axis, xs, ys, "Trial " + str(trial_num))
         all_xs.append(xs)
         all_ys.append(ys)
@@ -447,7 +453,7 @@ def main():
     # Generate and upload timer statistics (histogram + table)
     wandb_generate_timer_stats(run, inference_action_table)
 
-    # Create subtable containing only runs where the agent completed target
+    # Create suitable containing only runs where the agent completed target
     # completed_runs = [row for row in inference_data_table.data if row[1] >= 98.0]
     # completed_runs_table = wandb.Table(columns=table_cols, data=completed_runs)
     # run.log({"Completed table": completed_runs_table})

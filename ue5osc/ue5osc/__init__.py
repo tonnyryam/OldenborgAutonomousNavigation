@@ -61,9 +61,10 @@ class Communicator:
         the robot would hit the wall."""
         return self.send_and_await("/get/raycast")
 
-    def set_raycast_length(self, length: float) -> None:
+    def set_raycast_length(self, length: float, delay: float = 0.0) -> None:
         """Sets the length of the raycast."""
         self.client.send_message("/set/raycast", float(length))
+        sleep(delay)
 
     def get_location(self) -> tuple[float, float, float]:
         """Returns x, y, z location of the player in the Unreal Environment."""
@@ -129,9 +130,10 @@ class Communicator:
         dummy = 0.0
         self.client.send_message("/toggle/view", dummy)
 
-    def set_quality(self, graphics_level: int) -> None:
+    def set_quality(self, graphics_level: int, delay: float = 0.0) -> None:
         """Set the graphics quality level from 0 (low) to 4 (high)."""
         self.client.send_message("/set/quality", graphics_level)
+        sleep(delay)
 
     def set_texture(self, object: TexturedSurface, material: int) -> None:
         """Set the texture of walls/floors/ceilings to a different material"""
