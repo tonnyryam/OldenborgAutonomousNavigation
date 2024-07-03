@@ -184,6 +184,7 @@ def generate_efficiency_regression(inference_data_table) -> None:
         inference_data_table.get_column("Percent through Environment")
     )
 
+    # TODO: Make each trial a different color plot point
     regression_axis.plot(action_num, percent_through, "o", markersize=3)
 
     # Calculate and plot the regression model
