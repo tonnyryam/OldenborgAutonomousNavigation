@@ -112,6 +112,9 @@ coverage.xml
 .pytest_cache/
 cover/
 
+# Git Bash script
+*.sh
+
 # Translations
 *.mo
 *.pot
