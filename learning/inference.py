@@ -1,5 +1,8 @@
+import itertools
 import pathlib
 import platform
+import random
+import time
 from argparse import ArgumentParser
 from contextlib import contextmanager
 from functools import partial
@@ -8,15 +11,16 @@ from pathlib import Path, PurePath
 
 import enlighten
 from os import chdir
-
+import matplotlib.pyplot as plt
+import numpy as np
 import wandb
 from fastai.callback.wandb import WandbCallback
 from fastai.vision.learner import load_learner
+from matplotlib.axes import Axes
 from utils import y_from_filename  # noqa: F401 (needed for fastai load_learner)
 from subprocess import run as sprun
 from time import sleep
 
-from boxnav.box import Pt
 from boxnav.boxenv import BoxEnv
 from boxnav.boxnavigator import (
     Action,
@@ -55,11 +59,24 @@ fastai_to_boxnav = {
 
 action_prev = Action.NO_ACTION
 
+inference_times = []
+image_file_names = []
+
 
 def inference_func(model, image_file: str):
     global action_prev
 
+    # store image file name for data collection
+    # TODO: change to use pathlib
+    cut_file_name = image_file.rsplit("/", 1)[-1]
+    image_file_names.append(cut_file_name)
+
+    start_time = time.time()
+
     action_now, action_index, action_probs = model.predict(image_file)
+
+    end_time = time.time()
+    inference_times.append(end_time - start_time)
 
     action_now = fastai_to_boxnav[action_now]
 
@@ -76,6 +93,128 @@ def inference_func(model, image_file: str):
 
     action_prev = action_now
     return action_now
+
+
+colors = ["b", "g", "r", "c", "m", "y", "k"]
+line_styles = ["-", "--", ":"]  # there is also "-."
+unique_line_combinations = list(itertools.product(colors, line_styles))
+random.shuffle(unique_line_combinations)
+
+
+def plot_trial(axis: Axes, x_values, y_values, label: str) -> None:
+    if unique_line_combinations:
+        color, line_style = unique_line_combinations.pop(0)
+    else:
+        color, line_style = random.choice(colors), random.choice(line_styles)
+
+    axis.plot(x_values, y_values, color=color, linestyle=line_style, label=label)
+
+
+def wandb_generate_path_plot(
+    all_xs: list[float], all_ys: list[float], num_trials: int
+) -> None:
+    wandb.log(
+        {
+            "Consistency": wandb.plot.line_series(
+                xs=all_xs,
+                ys=all_ys,
+                keys=["Trial " + str(trial_num) for trial_num in range(num_trials)],
+                title="Tracking Agent Location per Trial",
+                xname="x location",
+            )
+        }
+    )
+
+
+def wandb_generate_timer_stats(wandb_run, inference_data_table) -> None:
+    # Distribution of how long it takes to execute actions
+    wandb.log(
+        {
+            "Histogram of Values": wandb.plot.histogram(
+                inference_data_table,
+                "Inference Time",
+                title="Distribution of Prediction Time per Action",
+            )
+        }
+    )
+
+    # Calculate summary statistics for action execution times
+    execution_times_array = np.array(inference_data_table.get_column("Inference Time"))
+    percentiles = np.percentile(execution_times_array, [25, 50, 75])
+
+    summary_stats = [
+        ["Mean", np.mean(execution_times_array)],
+        ["Standard Deviation", np.std(execution_times_array)],
+        ["Median", np.median(execution_times_array)],
+        ["Minimum Value", np.min(execution_times_array)],
+        ["Maximum Value", np.max(execution_times_array)],
+        ["25th Percentile", percentiles[0]],
+        ["50th Percentile", percentiles[1]],
+        ["75th Percentile", percentiles[2]],
+    ]
+
+    wandb_run.log(
+        {
+            "Inference Execute Action Timer Data": wandb.Table(
+                columns=["Statistic", "Value"], data=summary_stats
+            )
+        }
+    )
+
+
+def wandb_generate_confusion_matrix(
+    executed_actions: list[int], correct_actions: list[int]
+) -> None:
+    # Confusion Matrix assessing ALL trials
+    wandb.log(
+        {
+            "conf_mat": wandb.plot.confusion_matrix(
+                title="Confusion Matrix of Inference Predicted Action vs Correct Action",
+                probs=None,
+                preds=executed_actions,
+                y_true=correct_actions,
+                class_names=["forward", "right", "left"],
+            )
+        }
+    )
+
+
+def generate_efficiency_regression(inference_data_table) -> None:
+    regression_fig, regression_axis = plt.subplots()
+
+    action_num = np.array(inference_data_table.get_column("Action Num"))
+    percent_through = np.array(
+        inference_data_table.get_column("Percent through Environment")
+    )
+
+    regression_axis.plot(action_num, percent_through, "o", markersize=3)
+
+    # Calculate and plot the regression model
+    m, b = np.polyfit(action_num, percent_through, 1)
+    regression_axis.plot(
+        action_num,
+        m * action_num + b,
+    )
+
+    # Calculate R^2 (correlation) value and print to plot
+    correlation_xy = np.corrcoef(action_num, percent_through)[0, 1]
+    r_squared = correlation_xy**2
+    regression_axis.text(
+        0.05,
+        0.95,
+        f"$R^2$ = {r_squared:.2f} \n y = {m:.2f}x + {b:.2f}",
+        transform=regression_axis.transAxes,
+        fontsize=12,
+        verticalalignment="top",
+    )
+
+    regression_axis.set_title(
+        "Regression Model of Percent through Environment vs. Action Number"
+    )
+    regression_axis.set_xlabel("Action Number", fontweight="bold")
+    regression_axis.set_ylabel("Percent through Environment", fontweight="bold")
+
+    return regression_fig
 
 
 def parse_args():
@@ -165,18 +304,11 @@ def main():
 
     box_env = BoxEnv(boxes)
 
-    starting_box = boxes[0]
-    initial_x = starting_box.left + starting_box.width / 2
-    initial_y = starting_box.lower + 50
-    initial_position = Pt(initial_x, initial_y)
-    initial_rotation = radians(90)
-
     # TODO: use context manager for UE connection?
     agent = BoxNavigator(
         box_env,
-        initial_position,
-        initial_rotation,
         args,
+        rotation=radians(90),
         vision_callback=partial(inference_func, model),
     )
 
@@ -187,18 +319,32 @@ def main():
         color="yellow",
         leave=True,
     )
-    navigation_pbar = trials_pbar.add_subcounter("green", count=0)
-    navigation_counter = 0
+    progress_pbar = trials_pbar.add_subcounter("green", count=0)
+    progress_counter = 0
 
-    inference_data = []
+    # Dictionary to help store action moves in confusion matrix (only takes int values)
+    action_to_confusion = {
+        Action.FORWARD: 0,
+        Action.ROTATE_RIGHT: 1,
+        Action.ROTATE_LEFT: 2,
+    }
+
+    # Initialize the box image display to graph
+    plot_fig, plot_axis = plt.subplots()
+    box_env.display(plot_axis)
+
+    # Initialize data tracking variables across the entire run
+    inference_action_data = []
+    executed_actions, correct_actions = [], []
+    all_xs, all_ys = [], []
     average_actions = []
 
-    for _ in range(args.num_trials):
-        total_actions_taken, correct_action_taken = 0, 0
-        forward_count, rotate_left_count, rotate_right_count = 0, 0, 0
-        incorrect_left_count, incorrect_right_count = 0, 0
+    for trial_num in range(1, args.num_trials + 1):
+        xs, ys = [], []  # Track every location of the agent to plot
 
-        for i in range(args.max_actions):
+        total_actions_taken = 0
+
+        for action_num in range(1, args.max_actions + 1):
             try:
                 executed_action, correct_action = agent.execute_navigator_action()
 
@@ -207,60 +353,58 @@ def main():
                 break
 
             total_actions_taken += 1
-            correct_action_taken += 1 if executed_action == correct_action else 0
-            if (
-                executed_action == Action.ROTATE_LEFT
-                and correct_action == Action.ROTATE_RIGHT
-            ):
-                incorrect_left_count += 1
-            elif (
-                executed_action == Action.ROTATE_RIGHT
-                and correct_action == Action.ROTATE_LEFT
-            ):
-                incorrect_right_count += 1
 
-            match executed_action:
-                case Action.FORWARD:
-                    forward_count += 1
-                case Action.ROTATE_LEFT:
-                    rotate_left_count += 1
-                case Action.ROTATE_RIGHT:
-                    rotate_right_count += 1
+            # Count executed/correct actions to compare in confusion matrix
+            if executed_action != Action.NO_ACTION:
+                executed_actions.append(action_to_confusion[executed_action])
+                correct_actions.append(action_to_confusion[correct_action])
 
-            if agent.get_percent_through_env() >= 99.0:
+            current_x, current_y = agent.position.xy()
+            xs.append(current_x)
+            ys.append(current_y)
+
+            if agent.get_percent_through_env() >= 98.0:
                 average_actions.append(total_actions_taken)
                 print("Agent reached final target.")
                 break
 
             elif agent.is_stuck():
                 print("Agent is stuck.")
+                plot_axis.plot(current_x, current_y, "ro", markersize=5)
                 break
 
-            navigation_pbar.count = navigation_counter + (
+            action_data = [
+                trial_num,
+                action_num,
+                str(executed_action),
+                str(correct_action),
+                inference_times[-1],  # get most recently added inference time
+                current_x,
+                current_y,
+                agent.get_percent_through_env(),
+                image_file_names[-1],
+            ]
+            inference_action_data.append(action_data)
+
+            progress_pbar.count = progress_counter + (
                 int(agent.get_percent_through_env()) / 100
             )
-            trials_pbar.count = _ + 1
-            navigation_pbar.update(incr=0)
+            trials_pbar.count = trial_num
+            progress_pbar.update(incr=0)
 
-        navigation_counter += int(agent.get_percent_through_env()) / 100
+        progress_counter += int(agent.get_percent_through_env()) / 100
 
-        run_data = [
-            agent.get_percent_through_env(),
-            total_actions_taken,
-            correct_action_taken,
-            forward_count,
-            rotate_left_count,
-            rotate_right_count,
-            incorrect_left_count,
-            incorrect_right_count,
-        ]
-        inference_data.append(run_data)
+        # Plot where the agent has been during this trial
+        plot_trial(plot_axis, xs, ys, "Trial " + str(trial_num))
+        all_xs.append(xs)
+        all_ys.append(ys)
 
+        # Reset the agent and all tracking bars before the next trial
         agent.reset()
 
     final_metrics = (
         "\n\nCompleted "
-        + str(100 * (navigation_pbar.count / args.num_trials))
+        + str(100 * (progress_pbar.count / args.num_trials))
         + "% on average across "
         + str(args.num_trials)
         + " trial(s)"
@@ -282,19 +426,63 @@ def main():
     trials_pbar.close()
     pbar_manager.stop()
 
-    # Implement new table
-    table_cols = [
-        "Percent through environment",
-        "Total Actions Taken",
-        "Correct Actions Taken",
-        "Forward Action Taken",
-        "Rotate Left Action Taken",
-        "Rotate Right Action Taken",
-        "Incorrect Left Taken",
-        "Incorrect Right Taken",
+    # ------------------------------- DATA PLOTTING IN WANDB -------------------------------
+    # Plotting/Tracking where each agent has explored
+    plot_axis.invert_xaxis()
+    plot_axis.legend()
+    plot_axis.set_title(
+        "Plotted Paths of "
+        + str(args.num_trials)
+        + " trials using\n"
+        + str(wandb_model)
+    )
+    plot_axis.set_xlabel("Unreal Engine x-coordinate", fontweight="bold")
+    plot_axis.set_ylabel("Unreal Engine y-coordinate", fontweight="bold")
+    plot_fig.savefig(str(args.output_dir) + ".png")
+
+    run.log({"Plotted Paths": wandb.Image((str(args.output_dir) + ".png"))})
+    wandb_generate_path_plot(all_xs, all_ys, args.num_trials)
+
+    # Confusion Matrix
+    wandb_generate_confusion_matrix(executed_actions, correct_actions)
+
+    # Create table in Wandb tracking all data collected during the run
+    action_data_labels = [
+        "Trial Num",
+        "Action Num",
+        "Executed Action",
+        "Correct Action",
+        "Inference Time",
+        "X Coordinate",
+        "Y Coordinate",
+        "Percent through Environment",
+        "Image filename",
     ]
-    inference_data_table = wandb.Table(columns=table_cols, data=inference_data)
-    run.log({"Inference Data": inference_data_table})
+    inference_action_table = wandb.Table(
+        columns=action_data_labels, data=inference_action_data
+    )
+    run.log({"Inference Data per Action": inference_action_table})
+
+    # Generate efficiency regression plot in matplotlib and upload to wandb
+    regression_fig = generate_efficiency_regression(inference_action_table)
+    regression_fig.savefig(str(args.output_dir) + "_efficiency.png")
+    run.log(
+        {
+            "Efficiency Linear Regression": wandb.Image(
+                (str(args.output_dir) + "_efficiency.png")
+            )
+        }
+    )
+
+    # Generate and upload timer statistics (histogram + table)
+    wandb_generate_timer_stats(run, inference_action_table)
+
+    # Create suitable containing only runs where the agent completed target
+    # completed_runs = [row for row in inference_data_table.data if row[1] >= 98.0]
+    # completed_runs_table = wandb.Table(columns=table_cols, data=completed_runs)
+    # run.log({"Completed table": completed_runs_table})
+
+    # BRAINSTORM METRICS FOR **ONLY COMPLETE** RUNS
 
     chdir(agent.image_directory)
 

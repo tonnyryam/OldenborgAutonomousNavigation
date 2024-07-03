@@ -27,20 +27,18 @@ def simulate(args: Namespace) -> None:
 
     box_env = BoxEnv(boxes)
 
-    # TODO: move to constructor
-    starting_box = boxes[0]
-    initial_x = starting_box.left + starting_box.width / 2
-    initial_y = starting_box.lower + 50
-    initial_position = Pt(initial_x, initial_y)
-    initial_rotation = radians(90)
-
     # TODO: use context manager for UE connection?
-    agent = BoxNavigator(box_env, initial_position, initial_rotation, args)
+    agent = BoxNavigator(box_env, args, rotation=radians(90))
 
     pbar_manager = enlighten.get_manager()
     actions_pbar = pbar_manager.counter(total=args.max_total_actions, desc="   Actions")
 
     for _ in range(args.max_total_actions):
+        if args.delay != float("inf"):
+            sleep(args.delay)
+        else:
+            _ = input("Press Enter to continue... ")
+
         # Check for stopping conditions
         if agent.is_stuck() or agent.at_final_target():
             num_actions = agent.num_actions_executed
@@ -142,6 +140,9 @@ def main():
         "--stop_after_one_trial",
         action="store_true",
         help="Stop after one time through the environment (for debugging).",
+    )
+    argparser.add_argument(
+        "--delay", type=float, default=0.0, help="Delay between actions."
     )
 
     argparser.add_argument(
