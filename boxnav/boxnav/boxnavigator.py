@@ -175,13 +175,6 @@ def add_box_navigator_arguments(parser: ArgumentParser) -> None:
         help="Randomizes the texture of the walls, floors, and ceilings every N actions.",
     )
 
-    parser.add_argument(
-        "--teleport_box_size",
-        type=int,
-        default=100,
-        help="Size of the teleport box, indicating how far teleport navigator could teleport",
-    )
-
 
 class BoxNavigator:
     def __init__(
