@@ -267,7 +267,7 @@ def parse_args():
         help="Maximum number of actions to take.",
     )
     arg_parser.add_argument(
-        "--map_video_dir",
+        "--save_map_video",
         type=str,
         help="Directory to create and store gaming-style video with camera view and map",
     )
@@ -332,7 +332,7 @@ def main():
     if args.output_dir:
         check_path(args.output_dir)
 
-    snap_plot = True if args.map_video_dir else False
+    snap_plot = True if args.save_map_video else False
 
     print("Starting inference.")
 
@@ -499,7 +499,7 @@ def main():
         ]
     )
 
-    if args.map_video_dir:
+    if args.save_map_video:
         chdir(agent.animation_directory)
 
         video_name2 = PurePath(agent.animation_directory).stem
@@ -546,7 +546,7 @@ def main():
                 "[0]scale=1080:1080[base];[1]scale=400:300[overlay];[base][overlay]overlay=W-w-20:H-h-20",
                 "-c:a",
                 "copy",
-                (Path(args.map_video_dir + ".mp4")),
+                (Path(args.save_map_video + ".mp4")),
             ]
         )
 
