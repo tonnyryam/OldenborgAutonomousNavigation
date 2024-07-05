@@ -130,6 +130,12 @@ def add_box_navigator_arguments(parser: ArgumentParser) -> None:
     )
 
     parser.add_argument(
+        "--snap_plot",
+        action="store_true",
+        help="Take snapshots of matplotlib figure after each action.",
+    )
+
+    parser.add_argument(
         "--ue", action="store_true", help="Connect and send command to Unreal Engine."
     )
 
@@ -215,11 +221,18 @@ class BoxNavigator:
         self.teleport_box_size = args.teleport_box_size
 
         self.generating_animation = args.animation_extension is not None
-        if self.generating_animation:
-            self.animation_extension = args.animation_extension
+        self.snap_plot = args.snap_plot
+        if self.generating_animation or self.snap_plot:
             self.animation_scale = 300
-            fig, self.axis = plt.subplots()
-            self.camera = Camera(fig)
+            self.fig, self.axis = plt.subplots()
+            if self.generating_animation:
+                self.animation_extension = args.animation_extension
+                self.camera = Camera(self.fig)
+            if self.snap_plot:
+                self.animation_directory = Path(
+                    args.image_directory + "_plot"
+                ).resolve()
+                self.animation_directory.mkdir(parents=True, exist_ok=True)
 
         match args.navigator:
             case Navigator.PERFECT:
@@ -351,12 +364,20 @@ class BoxNavigator:
         animation.save(filename, progress_callback=progress_bar_callback)
 
     def __update_animation(self) -> None:
-        if self.generating_animation:
+        if self.generating_animation or self.snap_plot:
             self.env.display(self.axis)
             self.display()
             self.axis.invert_xaxis()
-            self.camera.snap()
+
+            if self.generating_animation:
+                self.camera.snap()
+
             # TODO: save the figure for overlay video
+            if self.snap_plot:
+                self.fig.savefig(
+                    f"{self.animation_directory}/{self.trial_num:03}_{self.images_saved:06}.{self.image_extension}"
+                )
+                self.axis.cla()
 
     def at_final_target(self) -> bool:
         return Pt.distance(self.position, self.final_target) < self.target_threshold
@@ -386,7 +407,7 @@ class BoxNavigator:
 
         self.num_actions_executed += 1
 
-        if self.generating_animation:
+        if self.generating_animation or self.snap_plot:
             self.__update_animation()
 
         return True

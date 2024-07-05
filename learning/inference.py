@@ -7,13 +7,16 @@ from argparse import ArgumentParser
 from contextlib import contextmanager
 from functools import partial
 from math import radians
-from pathlib import Path
+from pathlib import Path, PurePath
 import random
 import itertools
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 import time
 import numpy as np
+
+from os import chdir
+from subprocess import run as sprun
 
 import enlighten
 import matplotlib.pyplot as plt
@@ -459,6 +462,89 @@ def main():
     # run.log({"Completed table": completed_runs_table})
 
     # BRAINSTORM METRICS FOR **ONLY COMPLETE** RUNS
+
+    chdir(agent.image_directory)
+
+    video_name1 = PurePath(agent.image_directory).stem
+    filelist_name = video_name1 + "_filelist.txt"
+
+    image_files = sorted(agent.image_directory.glob("*.png"))
+    with open(filelist_name, "w") as file_out:
+        for file in image_files:
+            file_out.write(f"file '{file}'\nduration 0.0333\n")
+
+    sprun(
+        [
+            "ffmpeg",
+            # "-f" is the format argument and "concat" specifies that the format is to concatenate multiple files
+            "-f",
+            "concat",
+            # "-safe" is the argument of whether to check the input paths for safety and "0" says they don't need to be checked
+            "-safe",
+            "0",
+            # "-i" is the input file argument and "filelist_name" is the file containing the paths to the images that will be concatenated
+            "-i",
+            filelist_name,
+            # "-c:v" sets the codec and specifies it is for video stream and "libx264" specifies the codec to encode the video stream
+            # "-c:v",
+            # "libx264",
+            # # "-pix_fmt" specifies the pixel format for the output video and "yuv420p" is a pixel format using YUV color space and 4:2:0 chroma subsampling
+            # "-pix_fmt",
+            # "yuv420p",
+            # the following specifies where the output video will be saved
+            ("../" + video_name1 + ".mp4"),
+        ]
+    )
+
+    chdir(agent.animation_directory)
+
+    video_name2 = PurePath(agent.animation_directory).stem
+    filelist_name = video_name2 + "_filelist.txt"
+
+    image_files = sorted(agent.animation_directory.glob("*.png"))
+    with open(filelist_name, "w") as file_out:
+        for file in image_files:
+            file_out.write(f"file '{file}'\nduration 0.0333\n")
+
+    sprun(
+        [
+            "ffmpeg",
+            # "-f" is the format argument and "concat" specifies that the format is to concatenate multiple files
+            "-f",
+            "concat",
+            # "-safe" is the argument of whether to check the input paths for safety and "0" says they don't need to be checked
+            "-safe",
+            "0",
+            # "-i" is the input file argument and "filelist_name" is the file containing the paths to the images that will be concatenated
+            "-i",
+            filelist_name,
+            # "-c:v" sets the codec and specifies it is for video stream and "libx264" specifies the codec to encode the video stream
+            # "-c:v",
+            # "libx264",
+            # # "-pix_fmt" specifies the pixel format for the output video and "yuv420p" is a pixel format using YUV color space and 4:2:0 chroma subsampling
+            # "-pix_fmt",
+            # "yuv420p",
+            # the following specifies where the output video will be saved
+            ("../" + video_name2 + ".mp4"),
+        ]
+    )
+
+    chdir("../")
+
+    sprun(
+        [
+            "ffmpeg",
+            "-i",
+            (Path(video_name1 + ".mp4")),
+            "-i",
+            (Path(video_name2 + ".mp4")),
+            "-filter_complex",
+            "[0]scale=1080:1080[base];[1]scale=400:300[overlay];[base][overlay]overlay=W-w-20:H-h-20",
+            "-c:a",
+            "copy",
+            "output.mp4",
+        ]
+    )
 
 
 if __name__ == "__main__":
