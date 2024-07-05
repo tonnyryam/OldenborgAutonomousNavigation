@@ -130,12 +130,6 @@ def add_box_navigator_arguments(parser: ArgumentParser) -> None:
     )
 
     parser.add_argument(
-        "--snap_plot",
-        action="store_true",
-        help="Take snapshots of matplotlib figure after each action.",
-    )
-
-    parser.add_argument(
         "--ue", action="store_true", help="Connect and send command to Unreal Engine."
     )
 
@@ -190,6 +184,7 @@ class BoxNavigator:
         position: Pt | None = None,
         rotation: float | None = None,
         vision_callback: Callable[[str], Action] | None = None,
+        snap_plot: bool | None = False,
     ) -> None:
         self.env = env
 
@@ -221,7 +216,7 @@ class BoxNavigator:
         self.teleport_box_size = args.teleport_box_size
 
         self.generating_animation = args.animation_extension is not None
-        self.snap_plot = args.snap_plot
+        self.snap_plot = snap_plot
         if self.generating_animation or self.snap_plot:
             self.animation_scale = 300
             self.fig, self.axis = plt.subplots()

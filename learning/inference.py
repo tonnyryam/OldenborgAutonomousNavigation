@@ -247,6 +247,11 @@ def parse_args():
         default=10,
         help="Maximum number of actions to take.",
     )
+    arg_parser.add_argument(
+        "--map_video_dir",
+        type=str,
+        help="Directory to create and store gaming-style video with camera view and map",
+    )
 
     add_box_navigator_arguments(arg_parser)
 
@@ -308,6 +313,8 @@ def main():
     if args.output_dir:
         check_path(args.output_dir)
 
+    snap_plot = True if args.map_video_dir else False
+
     print("Starting inference.")
 
     box_env = BoxEnv(boxes)
@@ -318,6 +325,7 @@ def main():
         args,
         rotation=radians(90),
         vision_callback=partial(inference_func, model),
+        snap_plot=snap_plot,
     )
 
     pbar_manager = enlighten.get_manager()
@@ -496,55 +504,56 @@ def main():
         ]
     )
 
-    chdir(agent.animation_directory)
+    if args.map_video_dir:
+        chdir(agent.animation_directory)
 
-    video_name2 = PurePath(agent.animation_directory).stem
-    filelist_name = video_name2 + "_filelist.txt"
+        video_name2 = PurePath(agent.animation_directory).stem
+        filelist_name = video_name2 + "_filelist.txt"
 
-    image_files = sorted(agent.animation_directory.glob("*.png"))
-    with open(filelist_name, "w") as file_out:
-        for file in image_files:
-            file_out.write(f"file '{file}'\nduration 0.0333\n")
+        image_files = sorted(agent.animation_directory.glob("*.png"))
+        with open(filelist_name, "w") as file_out:
+            for file in image_files:
+                file_out.write(f"file '{file}'\nduration 0.0333\n")
 
-    sprun(
-        [
-            "ffmpeg",
-            # "-f" is the format argument and "concat" specifies that the format is to concatenate multiple files
-            "-f",
-            "concat",
-            # "-safe" is the argument of whether to check the input paths for safety and "0" says they don't need to be checked
-            "-safe",
-            "0",
-            # "-i" is the input file argument and "filelist_name" is the file containing the paths to the images that will be concatenated
-            "-i",
-            filelist_name,
-            # "-c:v" sets the codec and specifies it is for video stream and "libx264" specifies the codec to encode the video stream
-            # "-c:v",
-            # "libx264",
-            # # "-pix_fmt" specifies the pixel format for the output video and "yuv420p" is a pixel format using YUV color space and 4:2:0 chroma subsampling
-            # "-pix_fmt",
-            # "yuv420p",
-            # the following specifies where the output video will be saved
-            ("../" + video_name2 + ".mp4"),
-        ]
-    )
+        sprun(
+            [
+                "ffmpeg",
+                # "-f" is the format argument and "concat" specifies that the format is to concatenate multiple files
+                "-f",
+                "concat",
+                # "-safe" is the argument of whether to check the input paths for safety and "0" says they don't need to be checked
+                "-safe",
+                "0",
+                # "-i" is the input file argument and "filelist_name" is the file containing the paths to the images that will be concatenated
+                "-i",
+                filelist_name,
+                # "-c:v" sets the codec and specifies it is for video stream and "libx264" specifies the codec to encode the video stream
+                # "-c:v",
+                # "libx264",
+                # # "-pix_fmt" specifies the pixel format for the output video and "yuv420p" is a pixel format using YUV color space and 4:2:0 chroma subsampling
+                # "-pix_fmt",
+                # "yuv420p",
+                # the following specifies where the output video will be saved
+                ("../" + video_name2 + ".mp4"),
+            ]
+        )
 
-    chdir("../")
+        chdir("../")
 
-    sprun(
-        [
-            "ffmpeg",
-            "-i",
-            (Path(video_name1 + ".mp4")),
-            "-i",
-            (Path(video_name2 + ".mp4")),
-            "-filter_complex",
-            "[0]scale=1080:1080[base];[1]scale=400:300[overlay];[base][overlay]overlay=W-w-20:H-h-20",
-            "-c:a",
-            "copy",
-            "output.mp4",
-        ]
-    )
+        sprun(
+            [
+                "ffmpeg",
+                "-i",
+                (Path(video_name1 + ".mp4")),
+                "-i",
+                (Path(video_name2 + ".mp4")),
+                "-filter_complex",
+                "[0]scale=1080:1080[base];[1]scale=400:300[overlay];[base][overlay]overlay=W-w-20:H-h-20",
+                "-c:a",
+                "copy",
+                (Path(args.map_video_dir + ".mp4")),
+            ]
+        )
 
 
 if __name__ == "__main__":
