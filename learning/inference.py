@@ -116,10 +116,23 @@ def plot_trial(axis: Axes, x_values, y_values, label: str) -> None:
     axis.plot(x_values, y_values, color=color, linestyle=line_style, label=label)
 
 
-def wandb_generate_path_plot(
-    all_xs: list[float], all_ys: list[float], num_trials: int
+def save_plotted_paths(
+    wandb_run, fig, axis: Axes, model: str, num_trials: int, output_dir: str
 ) -> None:
-    wandb.log(
+    axis.invert_xaxis()
+    axis.legend()
+    axis.set_title("Plotted Paths of " + str(num_trials) + " trials using\n" + model)
+    axis.set_xlabel("Unreal Engine x-coordinate", fontweight="bold")
+    axis.set_ylabel("Unreal Engine y-coordinate", fontweight="bold")
+    fig.savefig(output_dir + ".png")
+
+    wandb_run.log({"Plotted Paths": wandb.Image((output_dir + ".png"))})
+
+
+def wandb_generate_path_plot(
+    wandb_run, all_xs: list[float], all_ys: list[float], num_trials: int
+) -> None:
+    wandb_run.log(
         {
             "Consistency": wandb.plot.line_series(
                 xs=all_xs,
@@ -132,7 +145,7 @@ def wandb_generate_path_plot(
     )
 
 
-def wandb_generate_timer_stats(wandb_run, inference_data_table) -> None:
+def wandb_generate_timer_analysis(wandb_run, inference_data_table) -> None:
     # Distribution of how long it takes to execute actions
     wandb.log(
         {
@@ -169,10 +182,10 @@ def wandb_generate_timer_stats(wandb_run, inference_data_table) -> None:
 
 
 def wandb_generate_confusion_matrix(
-    executed_actions: list[int], correct_actions: list[int]
+    wandb_run, executed_actions: list[int], correct_actions: list[int]
 ) -> None:
     # Confusion Matrix assessing ALL trials
-    wandb.log(
+    wandb_run.log(
         {
             "conf_mat": wandb.plot.confusion_matrix(
                 title="Confusion Matrix of Inference Predicted Action vs Correct Action",
@@ -185,7 +198,9 @@ def wandb_generate_confusion_matrix(
     )
 
 
-def generate_efficiency_regression(inference_data_table) -> None:
+def generate_efficiency_regression(
+    wandb_run, inference_data_table, output_dir: str
+) -> None:
     regression_fig, regression_axis = plt.subplots()
 
     action_num = np.array(inference_data_table.get_column("Action Num"))
@@ -215,13 +230,17 @@ def generate_efficiency_regression(inference_data_table) -> None:
         verticalalignment="top",
     )
 
+    # Add graph basics and formatting
     regression_axis.set_title(
         "Regression Model of Percent through Environment vs. Action Number"
     )
     regression_axis.set_xlabel("Action Number", fontweight="bold")
     regression_axis.set_ylabel("Percent through Environment", fontweight="bold")
 
-    return regression_fig
+    regression_fig.savefig(output_dir + "_efficiency.png")
+    wandb_run.log(
+        {"Efficiency Linear Regression": wandb.Image((output_dir + "_efficiency.png"))}
+    )
 
 
 def parse_args():
@@ -414,25 +433,6 @@ def main():
     pbar_manager.stop()
 
     # ------------------------------- DATA PLOTTING IN WANDB -------------------------------
-    # Plotting/Tracking where each agent has explored
-    plot_axis.invert_xaxis()
-    plot_axis.legend()
-    plot_axis.set_title(
-        "Plotted Paths of "
-        + str(args.num_trials)
-        + " trials using\n"
-        + str(wandb_model)
-    )
-    plot_axis.set_xlabel("Unreal Engine x-coordinate", fontweight="bold")
-    plot_axis.set_ylabel("Unreal Engine y-coordinate", fontweight="bold")
-    plot_fig.savefig(str(args.output_dir) + ".png")
-
-    run.log({"Plotted Paths": wandb.Image((str(args.output_dir) + ".png"))})
-    wandb_generate_path_plot(all_xs, all_ys, args.num_trials)
-
-    # Confusion Matrix
-    wandb_generate_confusion_matrix(executed_actions, correct_actions)
-
     # Create table in Wandb tracking all data collected during the run
     action_data_labels = [
         "Trial Num",
@@ -450,24 +450,19 @@ def main():
     )
     run.log({"Inference Data per Action": inference_action_table})
 
-    # Generate efficiency regression plot in matplotlib and upload to wandb
-    regression_fig = generate_efficiency_regression(inference_action_table)
-    regression_fig.savefig(str(args.output_dir) + "_efficiency.png")
-    run.log(
-        {
-            "Efficiency Linear Regression": wandb.Image(
-                (str(args.output_dir) + "_efficiency.png")
-            )
-        }
+    # Create matplotlib graphs and Upload to Wandb (logged to the active run)
+    generate_efficiency_regression(run, inference_action_table, args.output_dir)
+    save_plotted_paths(
+        run, plot_fig, plot_axis, str(wandb_model), args.num_trials, args.output_dir
     )
 
-    # Generate and upload timer statistics (histogram + table)
-    wandb_generate_timer_stats(run, inference_action_table)
+    # Create Wandb graphs and visuals (logged to the active run)
+    wandb_generate_path_plot(run, all_xs, all_ys, args.num_trials)
+    wandb_generate_confusion_matrix(run, executed_actions, correct_actions)
+    wandb_generate_timer_analysis(run, inference_action_table)
 
+    # NOTE: do this after data collection? (group_by -> keep data where there exists table_cols[7] >= 98)
     # Create suitable containing only runs where the agent completed target
-    # completed_runs = [row for row in inference_data_table.data if row[1] >= 98.0]
-    # completed_runs_table = wandb.Table(columns=table_cols, data=completed_runs)
-    # run.log({"Completed table": completed_runs_table})
 
     # BRAINSTORM METRICS FOR **ONLY COMPLETE** RUNS
 
