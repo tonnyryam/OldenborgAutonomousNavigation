@@ -1,11 +1,11 @@
 #!/bin/bash -l
 
-#SBATCH --job-name="SAME_AS_WANDB?"
+#SBATCH --job-name="training_perfect_models-Summer2024"
 #SBATCH --time=2-00:00:00
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --mem=40G
-#SBATCH --mail-user=EMAIL
+#SBATCH --mail-user=tfrw2023@mymail.pomona.edu
 #SBATCH --mail-type=ALL
 
 # Steps to run a training script on the cluster:
