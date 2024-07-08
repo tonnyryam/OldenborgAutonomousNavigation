@@ -8,6 +8,8 @@ from typing import Callable
 from celluloid import Camera
 from matplotlib import pyplot as plt
 from matplotlib.patches import Arrow, Rectangle, Wedge
+from os import chdir
+from subprocess import run as sprun
 
 from ue5osc import NUM_TEXTURES, Communicator, TexturedSurface
 
@@ -706,3 +708,38 @@ class BoxNavigator:
         )
 
         return (progress / sum(self.env_distances)) * 100
+
+    def concat_images(self, directory):
+        chdir(directory)
+
+        video_name = Path(directory).stem
+        filelist = video_name + "_filelist.txt"
+
+        image_files = sorted(directory.glob("*.png"))
+        with open(filelist, "w") as out:
+            for file in image_files:
+                out.write(f"file '{file}'\nduration 0.0333\n")
+
+        sprun(
+            [
+                "ffmpeg",
+                # "-f" is the format argument and "concat" specifies that the format is to concatenate multiple files
+                "-f",
+                "concat",
+                # "-safe" is the argument of whether to check the input paths for safety and "0" says they don't need to be checked
+                "-safe",
+                "0",
+                # "-i" is the input file argument and "filelist_name" is the file containing the paths to the images that will be concatenated
+                "-i",
+                filelist,
+                # "-c:v" sets the codec and specifies it is for video stream and "libx264" specifies the codec to encode the video stream
+                # "-c:v",
+                # "libx264",
+                # "-pix_fmt" specifies the pixel format for the output video and "yuv420p" is a pixel format using YUV color space and 4:2:0 chroma subsampling
+                # encoding for dumb players
+                "-pix_fmt",
+                "yuv420p",
+                # the following specifies where the output video will be saved
+                (video_name + ".mp4"),
+            ]
+        )

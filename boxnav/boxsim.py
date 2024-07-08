@@ -1,6 +1,6 @@
 from argparse import ArgumentParser, Namespace
 from math import radians
-from pathlib import Path, PurePath
+from pathlib import Path
 from time import sleep
 
 import enlighten
@@ -68,24 +68,18 @@ def simulate(args: Namespace) -> None:
     print("Simulation complete.")
 
     if args.auto_upload:
-        chdir("..")
-        chdir("learning")
+        chdir("../learning")
         sprun(
             [
                 "python",
                 "upload_data.py",
-                PurePath(agent.image_directory).stem,
+                Path(agent.image_directory).stem,
                 args.auto_upload,
-                (
-                    "Automatically uploading data from "
-                    + PurePath(agent.image_directory).stem
-                    + " run."
-                ),
+                f"Automatically uploading data from {Path(agent.image_directory).stem} run.",
                 agent.image_directory,
             ]
         )
-        chdir("..")
-        chdir("boxnav")
+        chdir("../boxnav")
 
     if args.animation_extension:
         # Generate a unique filename (don't overwrite previous animations)
