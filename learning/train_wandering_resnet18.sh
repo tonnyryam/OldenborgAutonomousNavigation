@@ -21,14 +21,15 @@
 # 3. Run the sbatch script with: sbatch new_launch_script.sh
 
 # Print the current date for debugging
-date
+date    
+date    
 
 # Load conda and run the training script
 module load miniconda3
-conda activate s24
-python training.py WanderingStaticResNet18Model Summer2024Official "Training Model on Wandering Static Data with ResNet18" ResNet18 Wandering100kData
-python training.py WanderingRand10ResNet18Model Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with ResNet18" ResNet18 Wandering100kRandEvery10Data
-python training.py WanderingRand50ResNet18Model Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data  with ResNet18" ResNet18 Wandering100kRandEvery50Data
+conda activate s24 
+python training.py WanderingStaticModel Summer2024Official "Training Model on Wandering Static Data with ResNet18" ResNet18 Wandering100kData
+python training.py WanderingRand10Model Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with ResNet18" ResNet18 Wandering100kRandEvery10Data
+python training.py WanderingRand50Model Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data  with ResNet18" ResNet18 Wandering100kRandEvery50Data
 
 # Print the name of the node for debugging
 hostname

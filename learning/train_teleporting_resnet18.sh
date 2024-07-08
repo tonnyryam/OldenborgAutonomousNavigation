@@ -26,7 +26,7 @@ date
 # Load conda and run the training script
 module load miniconda3
 conda activate s24
-python training.py TeleportingStaticModel Summer2024Official "Training Model on Teleporting Static Data with " ResNet18 Teleporting100kData
+python training.py TeleportingStaticModel Summer2024Official "Training Model on Teleporting Static Data with ResNet18" ResNet18 Teleporting100kData
 python training.py TeleportingRand10Model Summer2024Official "Training Model on Teleporting Randomized Textures every 10 Data with ResNet18" ResNet18 Teleporting100kRandEvery10Data
 python training.py TeleportingRand50Model Summer2024Official "Training Model on Teleporting Randomized Textures every 50 Data  with ResNet18" ResNet18 Teleporting100kRandEvery50Data
 
