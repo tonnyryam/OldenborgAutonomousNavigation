@@ -261,10 +261,9 @@ def train_model(dls: DataLoaders, args: Namespace, run, rep: int):
 
     wandb_name = args.wandb_name
     model_arch = args.model_arch
-    model_arch_name = short_to_full_architectures[model_arch]
     dataset_name = args.dataset_name
 
-    learn_name = f"{wandb_name}-{model_arch_name}-{dataset_name}-rep{rep:02}"
+    learn_name = f"{wandb_name}-{model_arch}-{dataset_name}-rep{rep:02}"
     learn_filename = learn_name + ".pkl"
     learn.export(learn_filename)
 
