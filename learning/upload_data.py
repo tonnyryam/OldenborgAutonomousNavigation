@@ -16,14 +16,17 @@ arg_parser.add_argument("data_dir", help="Directory containing dataset.")
 
 args = arg_parser.parse_args()
 
+project_names_str = "\n- ".join(project_names)
+name_prompt = f"""
+The project name you entered is not in wandb entity 'arcslaboratory'.
+Enter the name of an existing project:
+- {project_names_str}
+
+Or, press ENTER to create a new project using the previously entered name: '{args.wandb_project}'.
+"""
+
 while args.wandb_project not in project_names:
-    name = input(
-        "\n\nThe project name you entered is not in wandb entity 'arcslaboratory'.\n\nEnter the name of an existing project to upload to ("
-        + ", ".join(project_names)
-        + ")...\n\nOR\n\n...press ENTER to create a new project using the previouly entered name ('"
-        + args.wandb_project
-        + "').\n\n"
-    )
+    name = input(name_prompt)
     if name in project_names:
         args.wandb_project = name
     if name == "":
