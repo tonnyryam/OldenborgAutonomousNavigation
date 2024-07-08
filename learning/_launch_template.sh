@@ -20,13 +20,14 @@
 #    - any other changes you deem necessary (eg, a different GPU or more memory)
 # 3. Run the sbatch script with: sbatch new_launch_script.sh
 
-# Print the current date for debugging
+# Print the current date and hostname for debugging
 date
+hostname
 
 # Load conda and run the training script
 module load miniconda3
 conda activate ENVIRONMENT
 python training.py MODEL_NAME PROJECT_NAME "Sample description of training run..." ARCHITECTURE_NAME DATA_NAME
 
-# Print the name of the node for debugging
-hostname
+# Print the date again to see how long the job took
+date
