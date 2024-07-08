@@ -4,6 +4,7 @@ from math import atan2, cos, degrees, inf, radians, sin
 from pathlib import Path
 from random import choice, random, randrange, uniform
 from typing import Callable
+from time import sleep
 
 from celluloid import Camera
 from matplotlib import pyplot as plt
@@ -185,6 +186,7 @@ class BoxNavigator:
         position: Pt | None = None,
         rotation: float | None = None,
         vision_callback: Callable[[str], Action] | None = None,
+        snap_plot: bool | None = False,
     ) -> None:
         self.env = env
 
@@ -216,11 +218,18 @@ class BoxNavigator:
         self.teleport_box_size = args.teleport_box_size
 
         self.generating_animation = args.animation_extension is not None
-        if self.generating_animation:
-            self.animation_extension = args.animation_extension
+        self.snap_plot = snap_plot
+        if self.generating_animation or self.snap_plot:
             self.animation_scale = 300
-            fig, self.axis = plt.subplots()
-            self.camera = Camera(fig)
+            self.fig, self.axis = plt.subplots()
+            if self.generating_animation:
+                self.animation_extension = args.animation_extension
+                self.camera = Camera(self.fig)
+            if self.snap_plot:
+                self.animation_directory = Path(
+                    args.image_directory + "_plot"
+                ).resolve()
+                self.animation_directory.mkdir(parents=True, exist_ok=True)
 
         match args.navigator:
             case Navigator.PERFECT:
@@ -352,12 +361,20 @@ class BoxNavigator:
         animation.save(filename, progress_callback=progress_bar_callback)
 
     def __update_animation(self) -> None:
-        if self.generating_animation:
+        if self.generating_animation or self.snap_plot:
             self.env.display(self.axis)
             self.display()
             self.axis.invert_xaxis()
-            self.camera.snap()
+
+            if self.generating_animation:
+                self.camera.snap()
+
             # TODO: save the figure for overlay video
+            if self.snap_plot:
+                self.fig.savefig(
+                    f"{self.animation_directory}/{self.trial_num:03}_{self.images_saved:06}.{self.image_extension}"
+                )
+                self.axis.cla()
 
     def at_final_target(self) -> bool:
         return Pt.distance(self.position, self.final_target) < self.target_threshold
@@ -387,7 +404,7 @@ class BoxNavigator:
 
         self.num_actions_executed += 1
 
-        if self.generating_animation:
+        if self.generating_animation or self.snap_plot:
             self.__update_animation()
 
         return True
