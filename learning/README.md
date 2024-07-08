@@ -30,6 +30,6 @@ A deeply flawed method for choosing an architecture:
 | resnet18.a1_in1k                           |  11.7M | ResNet18          |
 | mobilenetv4_conv_small.e2400_r224_in1k     |   3.8M | MobileNetV4       |
 | efficientnet_b3.ra2_in1k                   |  12.2M | EfficientNet      |
-| convnextv2_atto.fcmae                      |   3.4M | ConvNextV2_Atto   |
-| convnextv2_base.fcmae_ft_in22k_in1k        |  88.7M | ConvNextV2_Base   |
+| convnextv2_atto.fcmae                      |   3.4M | ConvNextV2Atto    |
+| convnextv2_base.fcmae_ft_in22k_in1k        |  88.7M | ConvNextV2Base    |
 | vit_base_patch16_224.augreg2_in21k_ft_in1k |  86.6M | VitBase           |
