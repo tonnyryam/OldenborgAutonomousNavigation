@@ -7,9 +7,10 @@ from argparse import ArgumentParser
 from contextlib import contextmanager
 from functools import partial
 from math import radians
-from pathlib import Path
+from pathlib import Path, PurePath
 
 import enlighten
+from os import chdir
 import matplotlib.pyplot as plt
 import numpy as np
 import wandb
@@ -17,6 +18,8 @@ from fastai.callback.wandb import WandbCallback
 from fastai.vision.learner import load_learner
 from matplotlib.axes import Axes
 from utils import y_from_filename  # noqa: F401 (needed for fastai load_learner)
+from subprocess import run as sprun
+from time import sleep
 
 from boxnav.boxenv import BoxEnv
 from boxnav.boxnavigator import (
@@ -237,7 +240,6 @@ def parse_args():
         default=10,
         help="Maximum number of actions to take.",
     )
-
     add_box_navigator_arguments(arg_parser)
 
     return arg_parser.parse_args()
@@ -311,7 +313,14 @@ def main():
     )
 
     pbar_manager = enlighten.get_manager()
-    trials_pbar = pbar_manager.counter(total=args.num_trials, desc="Trials: ")
+    trials_pbar = pbar_manager.counter(
+        total=args.num_trials,
+        desc="Trials and Avg. Completion",
+        color="yellow",
+        leave=True,
+    )
+    progress_pbar = trials_pbar.add_subcounter("green", count=0)
+    progress_counter = 0
 
     # Dictionary to help store action moves in confusion matrix (only takes int values)
     action_to_confusion = {
@@ -328,12 +337,12 @@ def main():
     inference_action_data = []
     executed_actions, correct_actions = [], []
     all_xs, all_ys = [], []
+    average_actions = []
 
     for trial_num in range(1, args.num_trials + 1):
         xs, ys = [], []  # Track every location of the agent to plot
 
-        actions_pbar = pbar_manager.counter(total=args.max_actions, desc="Actions: ")
-        navigation_pbar = pbar_manager.counter(total=100, desc="Completion: ")
+        total_actions_taken = 0
 
         for action_num in range(1, args.max_actions + 1):
             try:
@@ -342,6 +351,8 @@ def main():
             except Exception as e:
                 print(e)
                 break
+
+            total_actions_taken += 1
 
             # Count executed/correct actions to compare in confusion matrix
             if executed_action != Action.NO_ACTION:
@@ -352,13 +363,8 @@ def main():
             xs.append(current_x)
             ys.append(current_y)
 
-            actions_pbar.update()
-
-            # Navigation progress is based on the percentage of the environment navigated
-            navigation_pbar.count = int(agent.get_percent_through_env())
-            navigation_pbar.update()
-
             if agent.get_percent_through_env() >= 98.0:
+                average_actions.append(total_actions_taken)
                 print("Agent reached final target.")
                 break
 
@@ -380,6 +386,14 @@ def main():
             ]
             inference_action_data.append(action_data)
 
+            progress_pbar.count = progress_counter + (
+                int(agent.get_percent_through_env()) / 100
+            )
+            trials_pbar.count = trial_num
+            progress_pbar.update(incr=0)
+
+        progress_counter += int(agent.get_percent_through_env()) / 100
+
         # Plot where the agent has been during this trial
         plot_trial(plot_axis, xs, ys, "Trial " + str(trial_num))
         all_xs.append(xs)
@@ -387,9 +401,26 @@ def main():
 
         # Reset the agent and all tracking bars before the next trial
         agent.reset()
-        trials_pbar.update()
-        actions_pbar.close()
-        navigation_pbar.close()
+
+    final_metrics = (
+        "\n\nCompleted "
+        + str(100 * (progress_pbar.count / args.num_trials))
+        + "% on average across "
+        + str(args.num_trials)
+        + " trial(s)"
+    )
+
+    if len(average_actions) > 0:
+        final_metrics += (
+            "with the agent taking "
+            + str(sum(average_actions) / len(average_actions))
+            + " actions on average to finish across "
+            + str(len(average_actions))
+            + " trial(s).\n\n"
+        )
+
+    else:
+        final_metrics += ".\n\n"
 
     agent.ue.close_osc()
     trials_pbar.close()
@@ -452,6 +483,41 @@ def main():
     # run.log({"Completed table": completed_runs_table})
 
     # BRAINSTORM METRICS FOR **ONLY COMPLETE** RUNS
+
+    chdir(agent.image_directory)
+
+    video_name = PurePath(agent.image_directory).stem
+    filelist_name = video_name + "_filelist.txt"
+
+    image_files = sorted(agent.image_directory.glob("*.png"))
+    with open(filelist_name, "w") as file_out:
+        for file in image_files:
+            file_out.write(f"file '{file}'\nduration 0.0333\n")
+
+    sprun(
+        [
+            "ffmpeg",
+            # "-f" is the format argument and "concat" specifies that the format is to concatenate multiple files
+            "-f",
+            "concat",
+            # "-safe" is the argument of whether to check the input paths for safety and "0" says they don't need to be checked
+            "-safe",
+            "0",
+            # "-i" is the input file argument and "filelist_name" is the file containing the paths to the images that will be concatenated
+            "-i",
+            filelist_name,
+            # "-c:v" sets the codec and specifies it is for video stream and "libx264" specifies the codec to encode the video stream
+            # "-c:v",
+            # "libx264",
+            # # "-pix_fmt" specifies the pixel format for the output video and "yuv420p" is a pixel format using YUV color space and 4:2:0 chroma subsampling
+            # "-pix_fmt",
+            # "yuv420p",
+            # the following specifies where the output video will be saved
+            (video_name + ".mp4"),
+        ]
+    )
+
+    print(final_metrics)
 
 
 if __name__ == "__main__":
