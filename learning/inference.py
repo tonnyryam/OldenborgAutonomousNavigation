@@ -7,10 +7,11 @@ from argparse import ArgumentParser
 from contextlib import contextmanager
 from functools import partial
 from math import radians
-from pathlib import Path, PurePath
+from os import chdir
+from pathlib import Path
+from subprocess import run as sprun
 
 import enlighten
-from os import chdir
 import matplotlib.pyplot as plt
 import numpy as np
 import wandb
@@ -18,8 +19,6 @@ from fastai.callback.wandb import WandbCallback
 from fastai.vision.learner import load_learner
 from matplotlib.axes import Axes
 from utils import y_from_filename  # noqa: F401 (needed for fastai load_learner)
-from subprocess import run as sprun
-from time import sleep
 
 from boxnav.boxenv import BoxEnv
 from boxnav.boxnavigator import (
@@ -486,7 +485,7 @@ def main():
 
     chdir(agent.image_directory)
 
-    video_name = PurePath(agent.image_directory).stem
+    video_name = Path(agent.image_directory).stem
     filelist_name = video_name + "_filelist.txt"
 
     image_files = sorted(agent.image_directory.glob("*.png"))
@@ -510,8 +509,8 @@ def main():
             # "-c:v",
             # "libx264",
             # # "-pix_fmt" specifies the pixel format for the output video and "yuv420p" is a pixel format using YUV color space and 4:2:0 chroma subsampling
-            # "-pix_fmt",
-            # "yuv420p",
+            "-pix_fmt",
+            "yuv420p",
             # the following specifies where the output video will be saved
             (video_name + ".mp4"),
         ]

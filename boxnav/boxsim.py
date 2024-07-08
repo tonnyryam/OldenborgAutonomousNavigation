@@ -1,13 +1,12 @@
 from argparse import ArgumentParser, Namespace
 from math import radians
-from pathlib import Path, PurePath
+from os import chdir
+from pathlib import Path
+from subprocess import run as sprun
 from time import sleep
 
 import enlighten
-from subprocess import run as sprun
-from os import chdir
 
-from boxnav.box import Pt
 from boxnav.boxenv import BoxEnv
 from boxnav.boxnavigator import BoxNavigator, Navigator, add_box_navigator_arguments
 from boxnav.environments import oldenborg_boxes as boxes
@@ -68,24 +67,19 @@ def simulate(args: Namespace) -> None:
     print("Simulation complete.")
 
     if args.auto_upload:
-        chdir("..")
-        chdir("learning")
+        image_directory_name = Path(args.image_directory).stem
+        chdir("../learning")
         sprun(
             [
                 "python",
                 "upload_data.py",
-                PurePath(agent.image_directory).stem,
-                args.auto_upload,
-                (
-                    "Automatically uploading data from "
-                    + PurePath(agent.image_directory).stem
-                    + " run."
-                ),
-                agent.image_directory,
+                image_directory_name,
+                str(args.auto_upload),
+                f"Automatically uploading data from {image_directory_name} run.",
+                str(agent.image_directory),
             ]
         )
-        chdir("..")
-        chdir("boxnav")
+        chdir("../boxnav")
 
     if args.animation_extension:
         # Generate a unique filename (don't overwrite previous animations)
