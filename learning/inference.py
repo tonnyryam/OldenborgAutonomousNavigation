@@ -8,17 +8,9 @@ from contextlib import contextmanager
 from functools import partial
 from math import radians
 from pathlib import Path, PurePath
-import random
-import itertools
-import matplotlib.pyplot as plt
-from matplotlib.axes import Axes
-import time
-import numpy as np
-
-from os import chdir
-from subprocess import run as sprun
 
 import enlighten
+from os import chdir
 import matplotlib.pyplot as plt
 import numpy as np
 import wandb
@@ -26,6 +18,8 @@ from fastai.callback.wandb import WandbCallback
 from fastai.vision.learner import load_learner
 from matplotlib.axes import Axes
 from utils import y_from_filename  # noqa: F401 (needed for fastai load_learner)
+from subprocess import run as sprun
+from time import sleep
 
 from boxnav.boxenv import BoxEnv
 from boxnav.boxnavigator import (
@@ -353,7 +347,14 @@ def main():
     )
 
     pbar_manager = enlighten.get_manager()
-    trials_pbar = pbar_manager.counter(total=args.num_trials, desc="Trials: ")
+    trials_pbar = pbar_manager.counter(
+        total=args.num_trials,
+        desc="Trials and Avg. Completion",
+        color="yellow",
+        leave=True,
+    )
+    progress_pbar = trials_pbar.add_subcounter("green", count=0)
+    progress_counter = 0
 
     # Dictionary to help store action moves in confusion matrix (only takes int values)
     action_to_confusion = {
@@ -370,6 +371,7 @@ def main():
     inference_action_data = []
     executed_actions, correct_actions = [], []
     all_xs, all_ys = [], []
+    average_actions = []
 
     for trial_num in range(1, args.num_trials + 1):
         # Update texture of environment if needed:
@@ -380,8 +382,7 @@ def main():
 
         xs, ys = [], []  # Track every location of the agent to plot
 
-        actions_pbar = pbar_manager.counter(total=args.max_actions, desc="Actions: ")
-        navigation_pbar = pbar_manager.counter(total=100, desc="Completion: ")
+        total_actions_taken = 0
 
         for action_num in range(1, args.max_actions + 1):
             try:
@@ -390,6 +391,8 @@ def main():
             except Exception as e:
                 print(e)
                 break
+
+            total_actions_taken += 1
 
             # Count executed/correct actions to compare in confusion matrix
             if executed_action != Action.NO_ACTION:
@@ -400,13 +403,8 @@ def main():
             xs.append(current_x)
             ys.append(current_y)
 
-            actions_pbar.update()
-
-            # Navigation progress is based on the percentage of the environment navigated
-            navigation_pbar.count = int(agent.get_percent_through_env())
-            navigation_pbar.update()
-
             if agent.get_percent_through_env() >= 98.0:
+                average_actions.append(total_actions_taken)
                 print("Agent reached final target.")
                 break
 
@@ -428,6 +426,14 @@ def main():
             ]
             inference_action_data.append(action_data)
 
+            progress_pbar.count = progress_counter + (
+                int(agent.get_percent_through_env()) / 100
+            )
+            trials_pbar.count = trial_num
+            progress_pbar.update(incr=0)
+
+        progress_counter += int(agent.get_percent_through_env()) / 100
+
         # Plot where the agent has been during this trial
         plot_trial(plot_axis, xs, ys, "Trial " + str(trial_num))
         all_xs.append(xs)
@@ -435,9 +441,26 @@ def main():
 
         # Reset the agent and all tracking bars before the next trial
         agent.reset()
-        trials_pbar.update()
-        actions_pbar.close()
-        navigation_pbar.close()
+
+    final_metrics = (
+        "\n\nCompleted "
+        + str(100 * (progress_pbar.count / args.num_trials))
+        + "% on average across "
+        + str(args.num_trials)
+        + " trial(s)"
+    )
+
+    if len(average_actions) > 0:
+        final_metrics += (
+            "with the agent taking "
+            + str(sum(average_actions) / len(average_actions))
+            + " actions on average to finish across "
+            + str(len(average_actions))
+            + " trial(s).\n\n"
+        )
+
+    else:
+        final_metrics += ".\n\n"
 
     agent.ue.close_osc()
     trials_pbar.close()
