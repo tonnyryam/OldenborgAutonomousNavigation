@@ -221,13 +221,22 @@ def train_model(dls: DataLoaders, args: Namespace, run, rep: int):
     """Train the cmd_model using the provided data and hyperparameters."""
 
     valid_architectures = [
-        "resnet18.a1_in1k",
-        "mobilenetv4_conv_small.e2400_r224_in1k",
-        "efficientnet_b3.ra2_in1k",
-        "convnextv2_atto.fcmae",
-        "convnextv2_base.fcmae_ft_in22k_in1k",
-        "vit_base_patch16_224.augreg2_in21k_ft_in1k",
+        "ResNet18",
+        "MobileNetV4",
+        "EfficientNet",
+        "ConvNextV2_Atto",
+        "ConvNextV2_Base",
+        "VitBase",
     ]
+
+    short_to_full_architectures = {
+        "ResNet18": "resnet18.a1_in1k",
+        "MobileNetV4": "mobilenetv4_conv_small.e2400_r224_in1k",
+        "EfficientNet": "efficientnet_b3.ra2_in1k",
+        "ConvNextV2Atto": "convnextv2_atto.fcmae",
+        "ConvNextV2Base": "convnextv2_base.fcmae_ft_in22k_in1k",
+        "ViTBase": "vit_base_patch16_224.augreg2_in21k_ft_in1k",
+    }
 
     if args.model_arch not in valid_architectures:
         raise ValueError(f"Invalid model architecture: {args.model_arch}")
@@ -245,7 +254,7 @@ def train_model(dls: DataLoaders, args: Namespace, run, rep: int):
     else:
         learn = vision_learner(
             dls,
-            args.model_arch,
+            short_to_full_architectures[args.model_arch],
             pretrained=args.pretrained,
             metrics=accuracy,
             cbs=WandbCallback(log_model=True),
