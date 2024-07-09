@@ -220,14 +220,17 @@ class BoxNavigator:
         if self.generating_animation or self.snap_plot:
             self.animation_scale = 300
             self.fig, self.axis = plt.subplots()
+
             if self.generating_animation:
                 self.animation_extension = args.animation_extension
                 self.camera = Camera(self.fig)
+
             if self.snap_plot:
                 self.animation_directory = Path(
                     args.image_directory + "_plot"
                 ).resolve()
                 self.animation_directory.mkdir(parents=True, exist_ok=True)
+                self.plot_images_saved = 0
 
         match args.navigator:
             case Navigator.PERFECT:
@@ -326,6 +329,8 @@ class BoxNavigator:
             self.__sync_ue_rotation()
             self.__sync_ue_position()
 
+        if self.snap_plot:
+            self.axis.cla()
         self.__update_animation()
 
     def display(self) -> None:
@@ -366,13 +371,6 @@ class BoxNavigator:
 
             if self.generating_animation:
                 self.camera.snap()
-
-            # TODO: save the figure for overlay video
-            if self.snap_plot:
-                self.fig.savefig(
-                    f"{self.animation_directory}/{self.trial_num:03}_{self.images_saved:06}.{self.image_extension}"
-                )
-                self.axis.cla()
 
     def at_final_target(self) -> bool:
         return Pt.distance(self.position, self.final_target) < self.target_threshold
@@ -426,6 +424,14 @@ class BoxNavigator:
             # Lower the delay after the first image since UE is warmed up
             self.ue.save_image(self.latest_image_filepath, delay=self.image_delay)
             self.image_delay = 0.25
+
+        # Save image of plot (which is updated later)
+        if self.snap_plot:
+            self.plot_images_saved += 1
+            self.fig.savefig(
+                f"{self.animation_directory}/{self.trial_num:03}_{self.plot_images_saved:06}.{self.image_extension}"
+            )
+            self.axis.cla()
 
         # Randomize the texture of the walls, floors, and ceilings
         if self.sync_with_ue:
