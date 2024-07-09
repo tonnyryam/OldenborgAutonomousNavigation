@@ -6,8 +6,6 @@ from subprocess import run as sprun
 from time import sleep
 
 import enlighten
-from subprocess import run as sprun
-from os import chdir
 
 from boxnav.boxenv import BoxEnv
 from boxnav.boxnavigator import BoxNavigator, Navigator, add_box_navigator_arguments
