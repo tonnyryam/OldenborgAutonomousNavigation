@@ -192,7 +192,7 @@ def wandb_generate_confusion_matrix(
 
 
 def generate_efficiency_regression(
-    wandb_run, inference_data_table, output_dir: str
+    wandb_run, inference_data_table, model: str, output_dir: str
 ) -> None:
     regression_fig, regression_axis = plt.subplots()
 
@@ -217,16 +217,14 @@ def generate_efficiency_regression(
     regression_axis.text(
         0.05,
         0.95,
-        f"$R^2$ = {r_squared:.2f} \n y = {m:.2f}x + {b:.2f}",
+        f"$R^2$ = {r_squared:.2f} \ny = {m:.2f}x + {b:.2f}",
         transform=regression_axis.transAxes,
         fontsize=12,
         verticalalignment="top",
     )
 
     # Add graph basics and formatting
-    regression_axis.set_title(
-        "Regression Model of Percent through Environment vs. Action Number"
-    )
+    regression_axis.set_title("Linear Regression Assessing the Efficiency of\n" + model)
     regression_axis.set_xlabel("Action Number", fontweight="bold")
     regression_axis.set_ylabel("Percent through Environment", fontweight="bold")
 
@@ -484,7 +482,9 @@ def main():
     run.log({"Inference Data per Action": inference_action_table})
 
     # Create matplotlib graphs and Upload to Wandb (logged to the active run)
-    generate_efficiency_regression(run, inference_action_table, args.output_dir)
+    generate_efficiency_regression(
+        run, inference_action_table, str(wandb_model), args.output_dir
+    )
     save_plotted_paths(
         run, plot_fig, plot_axis, str(wandb_model), args.num_trials, args.output_dir
     )
