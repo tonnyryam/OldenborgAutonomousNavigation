@@ -7,7 +7,7 @@ from argparse import ArgumentParser
 from contextlib import contextmanager
 from functools import partial
 from math import radians
-from pathlib import Path, PurePath
+from pathlib import Path
 import random
 import itertools
 import matplotlib.pyplot as plt
@@ -487,22 +487,31 @@ def main():
     # BRAINSTORM METRICS FOR **ONLY COMPLETE** RUNS
 
     agent.concat_images(agent.image_directory)
-    # agent.concat_images(agent.animation_directory)
+    agent.concat_images(agent.animation_directory)
+    chdir("..")
 
-    # sprun(
-    #     [
-    #         "ffmpeg",
-    #         "-i",
-    #         (agent.image_directory / (Path(agent.image_directory).stem + ".mp4")),
-    #         "-i",
-    #         (agent.animation_directory / (Path(agent.animation_directory).stem + ".mp4")),
-    #         "-filter_complex",
-    #         "[0]scale=1080:1080[base];[1]scale=400:300[overlay];[base][overlay]overlay=W-w-20:H-h-20",
-    #         "-c:a",
-    #         "copy",
-    #         (Path(agent.image_directory).stem + "_video.mp4"),
-    #     ]
-    # )
+    sprun(
+        [
+            "ffmpeg",
+            # directory of base video
+            "-i",
+            (agent.image_directory / (Path(agent.image_directory).stem + ".mp4")),
+            # directory of overlay video
+            "-i",
+            (
+                agent.animation_directory
+                / (Path(agent.animation_directory).stem + ".mp4")
+            ),
+            # "-filter_complex" allows for complex filter graphs and the rest scales the videos and location of the overlay
+            "-filter_complex",
+            "[0]scale=1080:1080[base];[1]scale=400:300[overlay];[base][overlay]overlay=W-w-20:H-h-20",
+            # "-c:a" specifies the codec for the audio stream and "copy" means it will be the same as input
+            "-c:a",
+            "copy",
+            # output name
+            (Path(agent.image_directory).stem + "_with_minimap.mp4"),
+        ]
+    )
 
     print(final_metrics)
 
