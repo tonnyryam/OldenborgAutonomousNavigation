@@ -16,6 +16,7 @@ import time
 import numpy as np
 
 from os import chdir
+from pathlib import Path
 from subprocess import run as sprun
 
 import enlighten
@@ -270,6 +271,11 @@ def parse_args():
         help="Maximum number of actions to take.",
     )
     arg_parser.add_argument(
+        "--alt_texture",
+        action="store_true",
+        help="Set the texture of the environment to alternative option",
+    )
+    arg_parser.add_argument(
         "--save_map_video",
         type=str,
         help="Directory to create and store gaming-style video with camera view and map",
@@ -378,6 +384,12 @@ def main():
     average_actions = []
 
     for trial_num in range(1, args.num_trials + 1):
+        # Update texture of environment if needed:
+        if args.alt_texture:
+            agent.ue.set_texture(0, 40)  # floor = light wood
+            agent.ue.set_texture(1, 25)  # walls = cork type of material
+            agent.ue.set_texture(2, 39)  # ceilings = dark wood
+
         xs, ys = [], []  # Track every location of the agent to plot
 
         total_actions_taken = 0

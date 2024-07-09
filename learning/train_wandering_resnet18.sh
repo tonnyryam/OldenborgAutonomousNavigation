@@ -20,16 +20,18 @@
 #    - any other changes you deem necessary (eg, a different GPU or more memory)
 # 3. Run the sbatch script with: sbatch new_launch_script.sh
 
-# Print the current date for debugging
+# Print the current date and name of the node for debugging
 date    
-date    
+hostname
 
-# Load conda and run the training script
+# Load conda and activate an environment 
 module load miniconda3
 conda activate s24 
-python training.py WanderingStaticModel Summer2024Official "Training Model on Wandering Static Data with ResNet18" ResNet18 Wandering100kData
+
+# Run training script
+python training.py WanderingStaticModel Summer2024Official "Training Model on Wandering Static Data with ResNet18" ResNet18 Wandering100kData  
 python training.py WanderingRand10Model Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with ResNet18" ResNet18 Wandering100kRandEvery10Data
 python training.py WanderingRand50Model Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data  with ResNet18" ResNet18 Wandering100kRandEvery50Data
 
-# Print the name of the node for debugging
-hostname
+# Print the date again to see how long the job took
+date
