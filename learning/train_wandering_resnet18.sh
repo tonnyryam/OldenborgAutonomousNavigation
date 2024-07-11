@@ -3,7 +3,7 @@
 #SBATCH --job-name="TrainWanderingModels-Summer2024Official"
 #SBATCH --time=2-00:00:00
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:v100:1
 #SBATCH --mem=40G
 #SBATCH --mail-user=kjad2022@mymail.pomona.edu
 #SBATCH --mail-type=ALL
@@ -29,9 +29,9 @@ module load miniconda3
 conda activate s24 
 
 # Run training script
-python training.py WanderingStaticModel Summer2024Official "Training Model on Wandering Static Data with ResNet18" ResNet18 Wandering100kData  
-python training.py WanderingRand10Model Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with ResNet18" ResNet18 Wandering100kRandEvery10Data
-python training.py WanderingRand50Model Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data  with ResNet18" ResNet18 Wandering100kRandEvery50Data
+python training.py WanderingStaticResNet18 Summer2024Official "Training Model on Wandering Static Data with ResNet18" ResNet18 Wandering100kData  
+python training.py WanderingRand10ResNet18 Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with ResNet18" ResNet18 Wandering100kRandEvery10Data
+python training.py WanderingRand50ResNet18 Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data  with ResNet18" ResNet18 Wandering100kRandEvery50Data
 
 # Print the date again to see how long the job took
 date
