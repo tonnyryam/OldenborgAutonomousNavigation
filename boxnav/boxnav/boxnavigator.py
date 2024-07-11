@@ -298,6 +298,7 @@ class BoxNavigator:
         self.target = self.env.boxes[0].target
         self.previous_target = self.position
 
+        self.action_prev = Action.NO_ACTION if self.vision_callback else None
         self.num_actions_executed = 0
         self.num_resets += 1
         self.trial_num += 1
@@ -399,6 +400,7 @@ class BoxNavigator:
                 raise NotImplementedError("Unknown action.")
 
         self.num_actions_executed += 1
+        self.action_prev = action if self.vision_callback else None
 
         if self.generating_animation or self.snap_plot:
             self.__update_animation()
@@ -698,7 +700,7 @@ class BoxNavigator:
         # - number of resets
         # - number of actions executed
         # - ...
-        return self.vision_callback(self.latest_image_filepath)
+        return self.vision_callback(self.latest_image_filepath, self.action_prev)
 
     def __update_target_if_necessary(self) -> None:
         assert not self.at_final_target(), "Already at final target."
