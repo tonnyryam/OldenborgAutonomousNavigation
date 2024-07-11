@@ -73,8 +73,8 @@ inference_times = []
 image_file_names = []
 
 
-def inference_func(model, image_file: str):
-    global action_prev
+def inference_func(model, image_file: str, action_prev: Action):
+    # global action_prev
 
     # store image file name for data collection
     # TODO: change to use pathlib
@@ -101,7 +101,6 @@ def inference_func(model, image_file: str):
     # action_prob = action_probs[action_index]
     # print(f"Moving {action_to_take} with probability {action_prob:.2f}")
 
-    action_prev = action_now
     return action_now
 
 
