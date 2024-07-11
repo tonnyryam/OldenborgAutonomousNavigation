@@ -214,6 +214,7 @@ class BoxNavigator:
         self.translation_increment = args.translation_increment
         self.rotation_increment = args.rotation_increment
         self.is_stuck_threshold = 10
+        self.no_progress_threshold = 20
 
         self.teleport_box_size = args.teleport_box_size
 
@@ -305,6 +306,8 @@ class BoxNavigator:
         self.trial_num += 1
 
         self.is_stuck_counter = 0
+        self.no_progress_counter = 0
+        self.most_progress = 0
 
         # TODO: this is clunky, maybe we should save args.navigator as a member variable
         if self.__compute_action_navigator == self.__compute_action_teleporting:
@@ -379,6 +382,15 @@ class BoxNavigator:
 
     def is_stuck(self) -> bool:
         return self.is_stuck_counter >= self.is_stuck_threshold
+
+    def no_progress(self) -> bool:
+        self.current_completion = self.get_percent_through_env()
+        if self.current_completion <= self.most_progress:
+            self.no_progress_counter += 1
+        else:
+            self.most_progress = self.current_completion
+            self.no_progress_counter = 0
+        return self.no_progress_counter >= self.no_progress_threshold
 
     def execute_action(self, action: Action) -> bool:
         "Execute the given action."

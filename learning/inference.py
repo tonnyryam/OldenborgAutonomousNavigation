@@ -421,6 +421,13 @@ def main():
                 plot_axis.plot(current_x, current_y, "ro", markersize=5)
                 break
 
+            elif agent.no_progress():
+                print(
+                    f"Agent made {agent.no_progress_threshold} actions without progressing."
+                )
+                plot_axis.plot(current_x, current_y, "ro", markersize=5)
+                break
+
             action_data = [
                 trial_num,
                 action_num,
@@ -499,31 +506,33 @@ def main():
     # BRAINSTORM METRICS FOR **ONLY COMPLETE** RUNS
 
     agent.concat_images(agent.image_directory)
-    agent.concat_images(agent.animation_directory)
-    chdir("..")
 
-    sprun(
-        [
-            "ffmpeg",
-            # directory of base video
-            "-i",
-            (agent.image_directory / (Path(agent.image_directory).stem + ".mp4")),
-            # directory of overlay video
-            "-i",
-            (
-                agent.animation_directory
-                / (Path(agent.animation_directory).stem + ".mp4")
-            ),
-            # "-filter_complex" allows for complex filter graphs and the rest scales the videos and location of the overlay
-            "-filter_complex",
-            "[0]scale=1080:1080[base];[1]scale=400:300[overlay];[base][overlay]overlay=W-w-20:H-h-20",
-            # "-c:a" specifies the codec for the audio stream and "copy" means it will be the same as input
-            "-c:a",
-            "copy",
-            # output name
-            (Path(agent.image_directory).stem + "_with_minimap.mp4"),
-        ]
-    )
+    if args.save_map_video is not None:
+        agent.concat_images(agent.animation_directory)
+        chdir("..")
+
+        sprun(
+            [
+                "ffmpeg",
+                # directory of base video
+                "-i",
+                (agent.image_directory / (Path(agent.image_directory).stem + ".mp4")),
+                # directory of overlay video
+                "-i",
+                (
+                    agent.animation_directory
+                    / (Path(agent.animation_directory).stem + ".mp4")
+                ),
+                # "-filter_complex" allows for complex filter graphs and the rest scales the videos and location of the overlay
+                "-filter_complex",
+                "[0]scale=1080:1080[base];[1]scale=400:300[overlay];[base][overlay]overlay=W-w-20:H-h-20",
+                # "-c:a" specifies the codec for the audio stream and "copy" means it will be the same as input
+                "-c:a",
+                "copy",
+                # output name
+                (Path(agent.image_directory).stem + "_with_minimap.mp4"),
+            ]
+        )
 
     print(final_metrics)
 
