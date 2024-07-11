@@ -5,7 +5,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --mem=40G
-#SBATCH --mail-user=kelliejau3224@gmail.com
+#SBATCH --mail-user=kjad2022@mymail.pomona.edu
 #SBATCH --mail-type=ALL
 
 # Steps to run a training script on the cluster:
