@@ -298,7 +298,7 @@ class BoxNavigator:
         self.target = self.env.boxes[0].target
         self.previous_target = self.position
 
-        self.action_prev = Action.NO_ACTION if self.vision_callback else None
+        self.action_prev = Action.NO_ACTION
         self.num_actions_executed = 0
         self.num_resets += 1
         self.trial_num += 1
