@@ -224,8 +224,8 @@ def train_model(dls: DataLoaders, args: Namespace, run, rep: int):
         "ResNet18",
         "MobileNetV4",
         "EfficientNet",
-        "ConvNextV2_Atto",
-        "ConvNextV2_Base",
+        "ConvNextV2Atto",
+        "ConvNextV2Base",
         "VitBase",
     ]
 
