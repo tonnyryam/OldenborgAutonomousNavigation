@@ -324,19 +324,20 @@ def main():
     # TODO: temporary fix? (we might remove callback on training side)
     model.remove_cb(WandbCallback)
 
-    output_dir = Path(args.output_dir).resolve()
-    output_dir.mkdir(parents=True, exist_ok=True)
+    if not args.image_directory:
+        output_dir = Path(args.output_dir).resolve()
+        output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Check if output directory is empty
-    if any(output_dir.iterdir()):
-        print("Output directory is not empty. Aborting.")
-        return
+        # Check if output directory is empty
+        if any(output_dir.iterdir()):
+            print("Output directory is not empty. Aborting.")
+            return
 
-    if args.output_dir:
-        args.ue = True
+        if args.output_dir:
+            args.ue = True
 
-    if args.output_dir:
-        check_path(args.output_dir)
+        if args.output_dir:
+            check_path(args.output_dir)
 
     snap_plot = True if args.save_map_video else False
 
@@ -388,6 +389,7 @@ def main():
             agent.rotation = agent.rotation + np.random.normal(0, radians(8))
 
         # Update texture of environment if needed:
+        # take position and move randomly to vary starting point between trials
         if args.alt_texture:
             agent.ue.set_texture(0, 40)  # floor = light wood
             agent.ue.set_texture(1, 25)  # walls = cork type of material
@@ -494,10 +496,18 @@ def main():
 
     # Create matplotlib graphs and Upload to Wandb (logged to the active run)
     generate_efficiency_regression(
-        run, inference_action_table, str(wandb_model), args.output_dir
+        run,
+        inference_action_table,
+        str(wandb_model),
+        str(agent.run_dir / args.output_dir),
     )
     save_plotted_paths(
-        run, plot_fig, plot_axis, str(wandb_model), args.num_trials, args.output_dir
+        run,
+        plot_fig,
+        plot_axis,
+        str(wandb_model),
+        args.num_trials,
+        str(agent.run_dir / args.output_dir),
     )
 
     # Create Wandb graphs and visuals (logged to the active run)
