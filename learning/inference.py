@@ -370,6 +370,12 @@ def main():
     average_actions = []
 
     for trial_num in range(1, args.num_trials + 1):
+        # Set randomized initial position after the first trial
+        if trial_num != 1:
+            agent.position.x = agent.position.x + np.random.normal(0, 200)
+            agent.position.y = agent.position.y + np.random.normal(0, 200)
+            agent.rotation = agent.rotation + np.random.normal(0, radians(8))
+
         # Update texture of environment if needed:
         if args.alt_texture:
             agent.ue.set_texture(0, 40)  # floor = light wood
