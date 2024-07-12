@@ -7,11 +7,20 @@ from argparse import ArgumentParser
 from contextlib import contextmanager
 from functools import partial
 from math import radians
+from pathlib import Path
+import random
+import itertools
+import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+import time
+import numpy as np
+
 from os import chdir
 from pathlib import Path
 from subprocess import run as sprun
 
 import enlighten
+from os import chdir
 import matplotlib.pyplot as plt
 import numpy as np
 import wandb
@@ -19,6 +28,8 @@ from fastai.callback.wandb import WandbCallback
 from fastai.vision.learner import load_learner
 from matplotlib.axes import Axes
 from utils import y_from_filename  # noqa: F401 (needed for fastai load_learner)
+from subprocess import run as sprun
+from time import sleep
 
 from boxnav.boxenv import BoxEnv
 from boxnav.boxnavigator import (
@@ -415,6 +426,13 @@ def main():
                 plot_axis.plot(current_x, current_y, "ro", markersize=5)
                 break
 
+            elif agent.no_progress():
+                print(
+                    f"Agent made {agent.no_progress_threshold} actions without progressing."
+                )
+                plot_axis.plot(current_x, current_y, "ro", markersize=5)
+                break
+
             action_data = [
                 trial_num,
                 action_num,
@@ -444,22 +462,10 @@ def main():
         # Reset the agent and all tracking bars before the next trial
         agent.reset()
 
-    final_metrics = (
-        "\n\nCompleted "
-        + str(100 * (progress_pbar.count / args.num_trials))
-        + "% on average across "
-        + str(args.num_trials)
-        + " trial(s)"
-    )
+    final_metrics = f"\n\nCompleted {100 * (progress_pbar.count / args.num_trials)}% on average across {args.num_trials} trial(s)"
 
     if len(average_actions) > 0:
-        final_metrics += (
-            "with the agent taking "
-            + str(sum(average_actions) / len(average_actions))
-            + " actions on average to finish across "
-            + str(len(average_actions))
-            + " trial(s).\n\n"
-        )
+        final_metrics += f"with the agent taking {sum(average_actions) / len(average_actions)} actions on average to finish across {len(average_actions)} trial(s).\n\n"
 
     else:
         final_metrics += ".\n\n"
@@ -504,89 +510,36 @@ def main():
 
     # BRAINSTORM METRICS FOR **ONLY COMPLETE** RUNS
 
-    chdir(agent.image_directory)
+    agent.concat_images(agent.image_directory)
 
-    video_name1 = Path(agent.image_directory).stem
-    filelist_name = video_name1 + "_filelist.txt"
-
-    image_files = sorted(agent.image_directory.glob("*.png"))
-    with open(filelist_name, "w") as file_out:
-        for file in image_files:
-            file_out.write(f"file '{file}'\nduration 0.0333\n")
-
-    sprun(
-        [
-            "ffmpeg",
-            # "-f" is the format argument and "concat" specifies that the format is to concatenate multiple files
-            "-f",
-            "concat",
-            # "-safe" is the argument of whether to check the input paths for safety and "0" says they don't need to be checked
-            "-safe",
-            "0",
-            # "-i" is the input file argument and "filelist_name" is the file containing the paths to the images that will be concatenated
-            "-i",
-            filelist_name,
-            # "-c:v" sets the codec and specifies it is for video stream and "libx264" specifies the codec to encode the video stream
-            # "-c:v",
-            # "libx264",
-            # # "-pix_fmt" specifies the pixel format for the output video and "yuv420p" is a pixel format using YUV color space and 4:2:0 chroma subsampling
-            "-pix_fmt",
-            "yuv420p",
-            # the following specifies where the output video will be saved
-            ("../" + video_name1 + ".mp4"),
-        ]
-    )
-
-    if args.save_map_video:
-        chdir(agent.animation_directory)
-
-        video_name2 = Path(agent.animation_directory).stem
-        filelist_name = video_name2 + "_filelist.txt"
-
-        image_files = sorted(agent.animation_directory.glob("*.png"))
-        with open(filelist_name, "w") as file_out:
-            for file in image_files:
-                file_out.write(f"file '{file}'\nduration 0.0333\n")
+    if args.save_map_video is not None:
+        agent.concat_images(agent.animation_directory)
+        chdir("..")
 
         sprun(
             [
                 "ffmpeg",
-                # "-f" is the format argument and "concat" specifies that the format is to concatenate multiple files
-                "-f",
-                "concat",
-                # "-safe" is the argument of whether to check the input paths for safety and "0" says they don't need to be checked
-                "-safe",
-                "0",
-                # "-i" is the input file argument and "filelist_name" is the file containing the paths to the images that will be concatenated
+                # directory of base video
                 "-i",
-                filelist_name,
-                # "-c:v" sets the codec and specifies it is for video stream and "libx264" specifies the codec to encode the video stream
-                # "-c:v",
-                # "libx264",
-                # # "-pix_fmt" specifies the pixel format for the output video and "yuv420p" is a pixel format using YUV color space and 4:2:0 chroma subsampling
-                # "-pix_fmt",
-                # "yuv420p",
-                # the following specifies where the output video will be saved
-                ("../" + video_name2 + ".mp4"),
-            ]
-        )
-
-        chdir("../")
-
-        sprun(
-            [
-                "ffmpeg",
+                (agent.image_directory / (Path(agent.image_directory).stem + ".mp4")),
+                # directory of overlay video
                 "-i",
-                (Path(video_name1 + ".mp4")),
-                "-i",
-                (Path(video_name2 + ".mp4")),
+                (
+                    agent.animation_directory
+                    / (Path(agent.animation_directory).stem + ".mp4")
+                ),
+                # "-filter_complex" allows for complex filter graphs and the rest scales the videos and location of the overlay
                 "-filter_complex",
                 "[0]scale=1080:1080[base];[1]scale=400:300[overlay];[base][overlay]overlay=W-w-20:H-h-20",
+                # "-c:a" specifies the codec for the audio stream and "copy" means it will be the same as input
                 "-c:a",
                 "copy",
-                (Path(args.save_map_video + ".mp4")),
+                # output name
+                (Path(agent.image_directory).stem + "_with_minimap.mp4"),
             ]
         )
+
+    print(final_metrics)
 
 
 if __name__ == "__main__":
