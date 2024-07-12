@@ -218,6 +218,13 @@ class BoxNavigator:
 
         self.teleport_box_size = args.teleport_box_size
 
+        if args.image_directory or self.generating_animation or self.snap_plot:
+            if args.navigator is Navigator.VISION:
+                self.run_dir = Path(f"{args.image_directory}_inference_run").resolve()
+            else:
+                self.run_dir = Path(f"{args.image_directory}_boxsim_run").resolve()
+            self.run_dir.mkdir(parents=True, exist_ok=True)
+
         self.generating_animation = args.animation_extension is not None
         self.snap_plot = snap_plot
         if self.generating_animation or self.snap_plot:
@@ -230,7 +237,7 @@ class BoxNavigator:
 
             if self.snap_plot:
                 self.animation_directory = Path(
-                    args.image_directory + "_plot"
+                    f"{self.run_dir}/{args.image_directory}_plot"
                 ).resolve()
                 self.animation_directory.mkdir(parents=True, exist_ok=True)
                 self.plot_images_saved = 0
@@ -279,7 +286,9 @@ class BoxNavigator:
             if args.image_directory:
                 assert args.image_extension, "Saving images requires image_extension."
 
-                self.image_directory = Path(args.image_directory).resolve()
+                self.image_directory = Path(
+                    f"{self.run_dir}/{args.image_directory}"
+                ).resolve()
                 self.image_directory.mkdir(parents=True, exist_ok=True)
 
                 self.image_extension = args.image_extension
@@ -414,7 +423,11 @@ class BoxNavigator:
                 raise NotImplementedError("Unknown action.")
 
         self.num_actions_executed += 1
-        self.action_prev = action if self.vision_callback else None
+        self.action_prev = (
+            action
+            if self.__compute_action_navigator == self.__compute_action_vision
+            else None
+        )
 
         if self.generating_animation or self.snap_plot:
             self.__update_animation()
