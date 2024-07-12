@@ -423,11 +423,8 @@ class BoxNavigator:
                 raise NotImplementedError("Unknown action.")
 
         self.num_actions_executed += 1
-        self.action_prev = (
-            action
-            if self.__compute_action_navigator == self.__compute_action_vision
-            else None
-        )
+        if self.__compute_action_navigator == self.__compute_action_vision:
+            self.action_prev = action
 
         if self.generating_animation or self.snap_plot:
             self.__update_animation()
