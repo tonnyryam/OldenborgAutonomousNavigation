@@ -3,7 +3,7 @@
 #SBATCH --job-name="TrainPerfectModelsConvNextV2Atto-Summer2024Official"
 #SBATCH --time=2-00:00:00
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu::v100:1
+#SBATCH --gres=gpu:v100:1
 #SBATCH --mem=40G
 #SBATCH --mail-user=kjad2022@mymail.pomona.edu
 #SBATCH --mail-type=ALL
