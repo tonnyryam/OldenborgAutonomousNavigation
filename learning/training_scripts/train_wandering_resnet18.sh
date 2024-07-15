@@ -29,9 +29,9 @@ module load miniconda3
 conda activate s24 
 
 # Run training script
-srun --nodes=1 --ntasks=1 --exclusive python ./../training.py WanderingStaticResNet18 Summer2024Official "Training Model on Wandering Static Data with ResNet18" ResNet18 Wandering100kData  
-srun --nodes=1 --ntasks=1 --exclusive python ./../training.py WanderingRand10ResNet18 Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with ResNet18" ResNet18 Wandering100kRandEvery10Data
-srun --nodes=1 --ntasks=1 --exclusive python ./../training.py WanderingRand50ResNet18 Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data  with ResNet18" ResNet18 Wandering100kRandEvery50Data
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py WanderingStaticResNet18 Summer2024Official "Training Model on Wandering Static Data with ResNet18" ResNet18 Wandering100kData --num_replicates 3
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py WanderingRand10ResNet18 Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with ResNet18" ResNet18 Wandering100kRandEvery10Data --num_replicates 3
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py WanderingRand50ResNet18 Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data  with ResNet18" ResNet18 Wandering100kRandEvery50Data --num_replicates 3
 
 # Print the date again to see how long the job took
 date
