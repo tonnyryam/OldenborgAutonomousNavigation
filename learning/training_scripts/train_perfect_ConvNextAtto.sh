@@ -3,8 +3,8 @@
 #SBATCH --job-name="TrainPerfectModelsConvNextV2Atto-Summer2024Official"
 #SBATCH --time=2-00:00:00
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:v100:1
 #SBATCH --mem=40G
+#SBATCH --gres=gpu: v100:1
 #SBATCH --mail-user=kjad2022@mymail.pomona.edu
 #SBATCH --mail-type=ALL
 
@@ -29,9 +29,9 @@ module load miniconda3
 conda activate s24 
 
 # Run training script
-srun --nodes=1 --ntasks=1 --exclusive python training.py PerfectStaticConvNextV2Atto Summer2024Official "Training Model on Perfect Static Data with ConvNextV2Atto" ConvNextV2Atto Perfect100kData  
-srun --nodes=1 --ntasks=1 --exclusive python training.py PerfectRand10ConvNextV2Atto Summer2024Official "Training Model on Perfect Randomized Textures every 10 Data with ConvNextV2Atto" ConvNextV2Atto Perfect100kRandEvery10Data
-srun --nodes=1 --ntasks=1 --exclusive python training.py PerfectRand50ConvNextV2Atto Summer2024Official "Training Model on Perfect Randomized Textures every 50 Data  with ConvNextV2Atto" ConvNextV2Atto Perfect100kRandEvery50Data
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py PerfectStaticConvNextV2Atto Summer2024Official "Training Model on Perfect Static Data with ConvNextV2Atto" ConvNextV2Atto Perfect100kData  
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py PerfectRand10ConvNextV2Atto Summer2024Official "Training Model on Perfect Randomized Textures every 10 Data with ConvNextV2Atto" ConvNextV2Atto Perfect100kRandEvery10Data
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py PerfectRand50ConvNextV2Atto Summer2024Official "Training Model on Perfect Randomized Textures every 50 Data  with ConvNextV2Atto" ConvNextV2Atto Perfect100kRandEvery50Data
 
 # Print the date again to see how long the job took
 date

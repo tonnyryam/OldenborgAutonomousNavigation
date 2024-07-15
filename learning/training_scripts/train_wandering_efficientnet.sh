@@ -29,9 +29,9 @@ module load miniconda3
 conda activate s24 
 
 # Run training script
-srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingStaticEfficientNet Summer2024Official "Training Model on Wandering Static Data with EfficientNet" EfficientNet Wandering100kData  
-srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingRand10EfficientNet Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with EfficientNet" EfficientNet Wandering100kRandEvery10Data
-srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingRand50EfficientNet Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data  with EfficientNet" EfficientNet Wandering100kRandEvery50Data
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py WanderingStaticEfficientNet Summer2024Official "Training Model on Wandering Static Data with EfficientNet" EfficientNet Wandering100kData  
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py WanderingRand10EfficientNet Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with EfficientNet" EfficientNet Wandering100kRandEvery10Data
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py WanderingRand50EfficientNet Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data  with EfficientNet" EfficientNet Wandering100kRandEvery50Data
 
 # Print the date again to see how long the job took
 date

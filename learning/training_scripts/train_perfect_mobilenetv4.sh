@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#SBATCH --job-name="TrainPerfectModels-Summer2024Official"
+#SBATCH --job-name="TrainPerfectModelsMobileNetV4-Summer2024Official"
 #SBATCH --time=2-00:00:00
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:v100:1
@@ -28,9 +28,9 @@ hostname
 module load miniconda3
 conda activate s24
 
-srun --nodes 1 --ntasks 1 --exclusive python training.py PerfectStaticModel Summer2024Official "training off 100k perfect navigator image dataset with MobileNetV4" MobileNetV4 Perfect100kData
-srun --nodes 1 --ntasks 1 --exclusive python training.py PerfectRand10Model Summer2024Official "training off 100k perfect navigator every 10 image dataset with MobileNetV4" MobileNetV4 Perfect100kRandEvery10Data
-srun --nodes 1 --ntasks 1 --exclusive python training.py PerfectRand50Model Summer2024Official "training off 100k perfect navigator every 50 image dataset with MobileNetV4" MobileNetV4 Perfect100kRandEvery50Data
+srun --nodes 1 --ntasks 1 --exclusive python ./../training.py PerfectStaticMobileNetV4 Summer2024Official "training off 100k perfect navigator image dataset with MobileNetV4" MobileNetV4 Perfect100kData
+srun --nodes 1 --ntasks 1 --exclusive python ./../training.py PerfectRand10MobileNetV4 Summer2024Official "training off 100k perfect navigator every 10 image dataset with MobileNetV4" MobileNetV4 Perfect100kRandEvery10Data
+srun --nodes 1 --ntasks 1 --exclusive python ./../training.py PerfectRand50MobileNetV4 Summer2024Official "training off 100k perfect navigator every 50 image dataset with MobileNetV4" MobileNetV4 Perfect100kRandEvery50Data
 
 # Print the finish date for debugging
 date

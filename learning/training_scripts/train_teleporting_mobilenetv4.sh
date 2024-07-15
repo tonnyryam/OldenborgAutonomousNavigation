@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#SBATCH --job-name="TrainTeleportingModels-Summer2024Official"
+#SBATCH --job-name="TrainTeleportingModelsMobileNetV4-Summer2024Official"
 #SBATCH --time=2-00:00:00
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:v100:1
@@ -29,9 +29,9 @@ module load miniconda3
 conda activate s24 
 
 # Run training script
-# srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingStaticModel Summer2024Official "Training Model on Teleporting Static Data with MobileNetV4" MobileNetV4 Teleporting100kData  
-srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingRand10Model Summer2024Official "Training Model on Teleporting Randomized Textures every 10 Data with MobileNetV4" MobileNetV4 Teleporting100kRandEvery10Data
-# srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingRand50Model Summer2024Official "Training Model on Teleporting Randomized Textures every 50 Data  with MobileNetV4" MobileNetV4 Teleporting100kRandEvery50Data
+srun --nodes 1 --ntasks 1 --exclusive python ./../training.py TeleportingStaticMobileNetV4 Summer2024Official "Training Model on Teleporting Static Data with MobileNetV4" MobileNetV4 Teleporting100kData  
+srun --nodes 1 --ntasks 1 --exclusive python ./../training.py TeleportingRand10MobileNetV4 Summer2024Official "Training Model on Teleporting Randomized Textures every 10 Data with MobileNetV4" MobileNetV4 Teleporting100kRandEvery10Data
+srun --nodes 1 --ntasks 1 --exclusive python ./../training.py TeleportingRand50MobileNetV4 Summer2024Official "Training Model on Teleporting Randomized Textures every 50 Data  with MobileNetV4" MobileNetV4 Teleporting100kRandEvery50Data
 
 # Print the date again to see how long the job took
 date
