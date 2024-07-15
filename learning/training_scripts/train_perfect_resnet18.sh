@@ -28,9 +28,9 @@ hostname
 module load miniconda3
 conda activate s24
 
-srun --nodes=1 --ntasks=1 --exclusive python ./../training.py PerfectStaticResNet18 Summer2024Official "training off 100k perfect navigator image dataset" ResNet18 Perfect100kData
-srun --nodes=1 --ntasks=1 --exclusive python ./../training.py PerfectRand10ResNet18 Summer2024Official "training off 100k perfect navigator every 10 image dataset" ResNet18 Perfect100kRandEvery10Data
-srun --nodes=1 --ntasks=1 --exclusive python ./../training.py PerfectRand50ResNet18 Summer2024Official "training off 100k perfect navigator every 50 image dataset" ResNet18 Perfect100kRandEvery50Data
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py PerfectStaticResNet18 Summer2024Official "training off 100k perfect navigator image dataset" ResNet18 Perfect100kData --num_replicates 3
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py PerfectRand10ResNet18 Summer2024Official "training off 100k perfect navigator every 10 image dataset" ResNet18 Perfect100kRandEvery10Data --num_replicates 3
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py PerfectRand50ResNet18 Summer2024Official "training off 100k perfect navigator every 50 image dataset" ResNet18 Perfect100kRandEvery50Data --num_replicates 3
 
 # Print the name of the node for debugging
 hostname
