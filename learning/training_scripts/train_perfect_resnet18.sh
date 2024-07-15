@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#SBATCH --job-name="training_perfect_models-Summer2024"
+#SBATCH --job-name="TrainPerfectModelsResNet18-Summer2024Official"
 #SBATCH --time=2-00:00:00
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:v100:1
@@ -22,13 +22,15 @@
 
 # Print the current date for debugging
 date
+hostname
 
 # Load conda and run the training script
 module load miniconda3
 conda activate s24
-python training.py PerfectStaticModel Summer2024Official "training off 100k perfect navigator image dataset" ResNet18 Perfect100kData
-python training.py PerfectRand10Model Summer2024Official "training off 100k perfect navigator every 10 image dataset" ResNet18 Perfect100kRandEvery10Data
-python training.py PerfectRand50Model Summer2024Official "training off 100k perfect navigator every 50 image dataset" ResNet18 Perfect100kRandEvery50Data
+
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py PerfectStaticResNet18 Summer2024Official "training off 100k perfect navigator image dataset" ResNet18 Perfect100kData
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py PerfectRand10ResNet18 Summer2024Official "training off 100k perfect navigator every 10 image dataset" ResNet18 Perfect100kRandEvery10Data
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py PerfectRand50ResNet18 Summer2024Official "training off 100k perfect navigator every 50 image dataset" ResNet18 Perfect100kRandEvery50Data
 
 # Print the name of the node for debugging
 hostname
