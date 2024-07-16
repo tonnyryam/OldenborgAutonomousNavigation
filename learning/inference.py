@@ -401,7 +401,7 @@ def main():
 
             # Set random rotation and position
             # agent.rotation = agent.rotation + np.random.normal(0, radians(8))
-            agent.rotation = agent.rotation + random.normal(radians(-8), radians(8))
+            agent.rotation = agent.rotation + np.random.normal(radians(-8), radians(8))
             agent.position = Pt(new_x, new_y)
 
             # Sync the position and rotation
