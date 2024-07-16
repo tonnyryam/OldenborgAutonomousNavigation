@@ -384,9 +384,19 @@ def main():
     for trial_num in range(1, args.num_trials + 1):
         # Set randomized initial position after the first trial
         if trial_num != 1:
-            agent.position.x = agent.position.x + np.random.normal(0, 200)
-            agent.position.y = agent.position.y + np.random.normal(0, 200)
-            agent.rotation = agent.rotation + np.random.normal(0, radians(8))
+            while (
+                agent.initial_position.x - 200
+                > agent.position.x
+                > agent.initial_position.x + 200
+                and agent.initial_position.y - 200
+                > agent.position.y
+                > agent.initial_position.y
+            ):
+                agent.position.x = agent.initial_position.x + np.random.normal(0, 200)
+                agent.position.y = agent.initial_position.y + np.random.normal(0, 200)
+                agent.rotation = agent.initial_rotation + np.random.normal(
+                    0, radians(8)
+                )
 
         # Update texture of environment if needed:
         # take position and move randomly to vary starting point between trials

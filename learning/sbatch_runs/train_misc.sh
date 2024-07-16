@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#SBATCH --job-name="TrainFailedModels-Summer2024Official"
+#SBATCH --job-name="TrainAdditionalModels-Summer2024Official"
 #SBATCH --time=2-00:00:00
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:a100:1
