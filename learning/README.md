@@ -25,7 +25,7 @@ A deeply flawed method for choosing an architecture:
 
 `timm` models for these experiments:
 
-| Full Name                                  | Params | Nice Name |
+| Full Name                                  | Params | Nice Name         |
 | ------------------------------------------ | -----: | ----------------- |     
 | resnet18.a1_in1k                           |  11.7M | ResNet18          |
 | mobilenetv4_conv_small.e2400_r224_in1k     |   3.8M | MobileNetV4       |
