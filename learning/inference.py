@@ -6,10 +6,11 @@ import time
 from argparse import ArgumentParser
 from contextlib import contextmanager
 from functools import partial
-from math import radians
+from math import degrees, radians
 from pathlib import Path
 import random
 import itertools
+from boxnav.box import Pt
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 import time
@@ -384,9 +385,20 @@ def main():
     for trial_num in range(1, args.num_trials + 1):
         # Set randomized initial position after the first trial
         if trial_num != 1:
-            agent.position.x = agent.position.x + np.random.normal(0, 200)
-            agent.position.y = agent.position.y + np.random.normal(0, 50)
-            agent.rotation = agent.rotation + np.random.normal(0, radians(8))
+            # Create randomized position
+            # new_x = agent.position.x + np.random.normal(0, 200)
+            # new_y = agent.position.y + np.random.normal(0, 50)
+            new_x = agent.position.x + random.uniform(-200, 200)
+            new_y = agent.position.y + random.uniform(-50, 50)
+
+            # Set random rotation and position
+            # agent.rotation = agent.rotation + np.random.normal(0, radians(8))
+            agent.rotation = agent.rotation + random.uniform(radians(-8), radians(8))
+            agent.position = Pt(new_x, new_y)
+
+            # Sync the position and rotation
+            agent.ue.set_location_xy(agent.position.x, agent.position.y, delay=0.1)
+            agent.ue.set_yaw(degrees(agent.rotation))
 
         # Update texture of environment if needed:
         # take position and move randomly to vary starting point between trials
@@ -462,7 +474,9 @@ def main():
         all_ys.append(ys)
 
         # Reset the agent and all tracking bars before the next trial
+        print("Initial Position Before Reset", agent.initial_position)
         agent.reset()
+        print("Initial Position", agent.initial_position)
 
     final_metrics = f"\n\nCompleted {100 * (progress_pbar.count / args.num_trials)}% on average across {args.num_trials} trial(s)"
 
