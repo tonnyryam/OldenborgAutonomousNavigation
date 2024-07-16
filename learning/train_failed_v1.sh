@@ -29,9 +29,21 @@ module load miniconda3
 conda activate s24 
 
 # Run training script
-srun --nodes=1 --ntasks=1 --exclusive python training.py TeleportingRand10ConvNextV2Base Summer2024Official "Training Model on Teleporting Random 10 Data with ConvNextV2Base" ConvNextV2Base Teleporting100kRandEvery10Data  
-srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingRand10EfficientNet Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with EfficientNet" EfficientNet Wandering100kRandEvery10Data
-srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingRand50ConvNextV2Atto Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data  with ConvNextV2Atto" ConvNextV2Atto Wandering100kRandEvery50Data
+# srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingRand10ConvNextV2Base Summer2024Official "Training Model on Teleporting Random 10 Data with ConvNextV2Base" ConvNextV2Base Teleporting100kRandEvery10Data  
+# srun --nodes 1 --ntasks 1 --exclusive python training.py WanderingRand10EfficientNet Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with EfficientNet" EfficientNet Wandering100kRandEvery10Data
+# srun --nodes 1 --ntasks 1 --exclusive python training.py WanderingRand50ConvNextV2Atto Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data  with ConvNextV2Atto" ConvNextV2Atto Wandering100kRandEvery50Data
+
+srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingStaticResNet18 Summer2024Official "Training Model on Teleporting Static Data with ResNet18" ResNet18 Teleporting100kData  
+srun --nodes 1 --ntasks 1 --exclusive python training.py WanderingRand10ConvNextV2Base Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with ConvNextV2Base" ConvNextV2Base Wandering100kRandEvery10Data
+srun --nodes 1 --ntasks 1 --exclusive python training.py WanderingStaticConvNextV2Base Summer2024Official "Training Model on Wandering Static Data with ConvNextV2Base" ConvNextV2Base Wandering100kData  
+srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingRand50Model Summer2024Official "Training Model on Teleporting Randomized Textures every 50 Data  with MobileNetV4" MobileNetV4 Teleporting100kRandEvery50Data
+srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingStaticModel Summer2024Official "Training Model on Teleporting Static Data with MobileNetV4" MobileNetV4 Teleporting100kData  
+srun --nodes 1 --ntasks 1 --exclusive python training.py WanderingRand50ResNet18 Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data  with ResNet18" ResNet18 Wandering100kRandEvery50Data
+srun --nodes 1 --ntasks 1 --exclusive python training.py WanderingStaticResNet18 Summer2024Official "Training Model on Wandering Static Data with ResNet18" ResNet18 Wandering100kData  
+srun --nodes 1 --ntasks 1 --exclusive python training.py WanderingRand10ResNet18 Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with ResNet18" ResNet18 Wandering100kRandEvery10Data
+srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingStaticResNet18 Summer2024Official "Training Model on Teleporting Static Data with ResNet18" ResNet18 Teleporting100kData  
+srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingRand10ResNet18 Summer2024Official "Training Model on Teleporting Randomized Textures every 10 Data with ResNet18" ResNet18 Teleporting100kRandEvery10Data
+srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingRand50ResNet18 Summer2024Official "Training Model on Teleporting Randomized Textures every 50 Data  with ResNet18" ResNet18 Teleporting100kRandEvery50Data
 
 # Print the date again to see how long the job took
 date
