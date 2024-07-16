@@ -385,7 +385,7 @@ def main():
         # Set randomized initial position after the first trial
         if trial_num != 1:
             agent.position.x = agent.position.x + np.random.normal(0, 200)
-            agent.position.y = agent.position.y + np.random.normal(0, 200)
+            agent.position.y = agent.position.y + np.random.normal(0, 50)
             agent.rotation = agent.rotation + np.random.normal(0, radians(8))
 
         # Update texture of environment if needed:
