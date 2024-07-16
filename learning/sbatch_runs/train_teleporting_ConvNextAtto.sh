@@ -5,7 +5,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --mem=40G
-#SBATCH --mail-user=kjad2022@mymail.pomona.edu
+#SBATCH --mail-user=tfrw2023@mymail.pomona.edu
 #SBATCH --mail-type=ALL
 
 # Steps to run a training script on the cluster:
@@ -29,9 +29,9 @@ module load miniconda3
 conda activate s24 
 
 # Run training script
-srun --nodes=1 --ntasks=1 --exclusive python training.py TeleportingStaticConvNextV2Atto Summer2024Official "Training Model on Teleporting Static Data with ConvNextV2Atto" ConvNextV2Atto Teleporting100kData  
-srun --nodes=1 --ntasks=1 --exclusive python training.py TeleportingRand10ConvNextV2Atto Summer2024Official "Training Model on Teleporting Randomized Textures every 10 Data with ConvNextV2Atto" ConvNextV2Atto Teleporting100kRandEvery10Data
-srun --nodes=1 --ntasks=1 --exclusive python training.py TeleportingRand50ConvNextV2Atto Summer2024Official "Training Model on Teleporting Randomized Textures every 50 Data  with ConvNextV2Atto" ConvNextV2Atto Teleporting100kRandEvery50Data
+srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingStaticConvNextV2Atto Summer2024Official "Training Model on Teleporting Static Data with ConvNextV2Atto" ConvNextV2Atto Teleporting100kData  
+srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingRand10ConvNextV2Atto Summer2024Official "Training Model on Teleporting Randomized Textures every 10 Data with ConvNextV2Atto" ConvNextV2Atto Teleporting100kRandEvery10Data
+srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingRand50ConvNextV2Atto Summer2024Official "Training Model on Teleporting Randomized Textures every 50 Data  with ConvNextV2Atto" ConvNextV2Atto Teleporting100kRandEvery50Data
 
 # Print the date again to see how long the job took
 date

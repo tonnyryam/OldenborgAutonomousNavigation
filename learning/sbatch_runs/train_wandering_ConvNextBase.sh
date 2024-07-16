@@ -5,7 +5,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --mem=40G
-#SBATCH --mail-user=kjad2022@mymail.pomona.edu
+#SBATCH --mail-user=tfrw2023@mymail.pomona.edu
 #SBATCH --mail-type=ALL
 
 # Steps to run a training script on the cluster:
@@ -29,9 +29,9 @@ module load miniconda3
 conda activate s24 
 
 # Run training script
-srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingStaticConvNextV2Base Summer2024Official "Training Model on Wandering Static Data with ConvNextV2Base" ConvNextV2Base Wandering100kData  
-srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingRand10ConvNextV2Base Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with ConvNextV2Base" ConvNextV2Base Wandering100kRandEvery10Data
-srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingRand50ConvNextV2Base Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data  with ConvNextV2Base" ConvNextV2Base Wandering100kRandEvery50Data
+# srun --nodes 1 --ntasks 1 --exclusive python training.py WanderingStaticConvNextV2Base Summer2024Official "Training Model on Wandering Static Data with ConvNextV2Base" ConvNextV2Base Wandering100kData  
+# srun --nodes 1 --ntasks 1 --exclusive python training.py WanderingRand10ConvNextV2Base Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with ConvNextV2Base" ConvNextV2Base Wandering100kRandEvery10Data
+srun --nodes 1 --ntasks 1 --exclusive python training.py WanderingRand50ConvNextV2Base Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data  with ConvNextV2Base" ConvNextV2Base Wandering100kRandEvery50Data
 
 # Print the date again to see how long the job took
 date

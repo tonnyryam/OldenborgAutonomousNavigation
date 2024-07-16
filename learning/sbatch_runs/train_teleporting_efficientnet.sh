@@ -5,7 +5,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:a100:1
 #SBATCH --mem=40G
-#SBATCH --mail-user=kjad2022@mymail.pomona.edu
+#SBATCH --mail-user=tfrw20232@mymail.pomona.edu
 #SBATCH --mail-type=ALL
 
 # Steps to run a training script on the cluster:
@@ -29,9 +29,9 @@ module load miniconda3
 conda activate s24 
 
 # Run training script
-srun --nodes=1 --ntasks=1 --exclusive python training.py TeleportingStaticEfficientNet Summer2024Official "Training Model on Teleporting Static Data with EfficientNet" EfficientNet Teleporting100kData  
-srun --nodes=1 --ntasks=1 --exclusive python training.py TeleportingRand10EfficientNet Summer2024Official "Training Model on Teleporting Randomized Textures every 10 Data with EfficientNet" EfficientNet Teleporting100kRandEvery10Data
-srun --nodes=1 --ntasks=1 --exclusive python training.py TeleportingRand50EfficientNet Summer2024Official "Training Model on Teleporting Randomized Textures every 50 Data  with EfficientNet" EfficientNet Teleporting100kRandEvery50Data
+srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingStaticEfficientNet Summer2024Official "Training Model on Teleporting Static Data with EfficientNet" EfficientNet Teleporting100kData  
+srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingRand10EfficientNet Summer2024Official "Training Model on Teleporting Randomized Textures every 10 Data with EfficientNet" EfficientNet Teleporting100kRandEvery10Data
+srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingRand50EfficientNet Summer2024Official "Training Model on Teleporting Randomized Textures every 50 Data  with EfficientNet" EfficientNet Teleporting100kRandEvery50Data
 
 # Print the date again to see how long the job took
 date
