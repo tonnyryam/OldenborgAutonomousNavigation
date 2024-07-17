@@ -274,9 +274,9 @@ def parse_args():
         help="Set the texture of the environment to alternative option",
     )
     arg_parser.add_argument(
-        "--save_map_video",
-        type=str,
-        help="Directory to create and store gaming-style video with camera view and map",
+        "--save_minimap_video",
+        action="store_true",
+        help="Create and store gaming-style video with camera view and mini-map",
     )
 
     add_box_navigator_arguments(arg_parser)
@@ -340,7 +340,7 @@ def main():
         if args.output_dir:
             check_path(args.output_dir)
 
-    snap_plot = True if args.save_map_video else False
+    snap_plot = True if args.save_minimap_video else False
 
     print("Starting inference.")
 
@@ -544,7 +544,7 @@ def main():
 
     agent.concat_images(agent.image_directory)
 
-    if args.save_map_video is not None:
+    if snap_plot:
         agent.concat_images(agent.animation_directory)
         chdir("..")
 
