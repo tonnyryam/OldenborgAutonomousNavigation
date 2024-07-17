@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#SBATCH --job-name="TrainTelportingModelsViT-Summer2024Official"
+#SBATCH --job-name="TrainTeleportingModelsViT-Summer2024Official"
 #SBATCH --time=2-00:00:00
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
@@ -29,9 +29,9 @@ module load miniconda3
 conda activate s24 
 
 # Run training script
-srun --nodes=1 --ntasks=1 --exclusive python ./../training.py TelportingStaticViT Summer2024Official "Training Model on Telporting Static Data with ViT" ViT Telporting100kData --image_resize 224
-srun --nodes=1 --ntasks=1 --exclusive python ./../training.py TelportingRand10ViT Summer2024Official "Training Model on Telporting Randomized Textures every 10 Data with ViT" ViT Telporting100kRandEvery10Data --image_resize 224
-srun --nodes=1 --ntasks=1 --exclusive python ./../training.py TelportingRand50ViT Summer2024Official "Training Model on Telporting Randomized Textures every 50 Data  with ViT" ViT Telporting100kRandEvery50Data --image_resize 224
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py TeleportingStaticViT Summer2024Official "Training Model on Teleporting Static Data with ViT" ViT Teleporting100kData  
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py TeleportingRand10ViT Summer2024Official "Training Model on Teleporting Randomized Textures every 10 Data with ViT" ViT Teleporting100kRandEvery10Data
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py TeleportingRand50ViT Summer2024Official "Training Model on Teleporting Randomized Textures every 50 Data  with ViT" ViT Teleporting100kRandEvery50Data
 
 # Print the date again to see how long the job took
 date
