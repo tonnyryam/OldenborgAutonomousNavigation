@@ -399,10 +399,12 @@ def main():
                 # new_x = agent.position.x + random.uniform(-200, 200)
                 # new_y = agent.position.y + random.uniform(-50, 50)
 
-            # Set random rotation and position
-            # agent.rotation = agent.rotation + np.random.normal(0, radians(8))
-            agent.rotation = agent.rotation + np.random.normal(radians(-8), radians(8))
-            agent.position = Pt(new_x, new_y)
+                # Set random rotation and position
+                # agent.rotation = agent.rotation + np.random.normal(0, radians(8))
+                agent.rotation = agent.rotation + np.random.normal(
+                    radians(-8), radians(8)
+                )
+                agent.position = Pt(new_x, new_y)
 
             # Sync the position and rotation
             agent.ue.set_location_xy(agent.position.x, agent.position.y, delay=0.1)
@@ -482,9 +484,7 @@ def main():
         all_ys.append(ys)
 
         # Reset the agent and all tracking bars before the next trial
-        print("Initial Position Before Reset", agent.initial_position)
         agent.reset()
-        print("Initial Position", agent.initial_position)
 
     final_metrics = f"\n\nCompleted {100 * (progress_pbar.count / args.num_trials)}% on average across {args.num_trials} trial(s)"
 
