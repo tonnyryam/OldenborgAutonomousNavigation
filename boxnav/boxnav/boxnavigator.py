@@ -214,7 +214,7 @@ class BoxNavigator:
         self.translation_increment = args.translation_increment
         self.rotation_increment = args.rotation_increment
         self.is_stuck_threshold = 10
-        self.no_progress_threshold = 20
+        self.no_progress_threshold = 50
 
         self.teleport_box_size = args.teleport_box_size
 
