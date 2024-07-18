@@ -29,9 +29,9 @@ module load miniconda3
 conda activate s24 
 
 # Run training script
-srun --nodes=1 --ntasks=1 --exclusive python ./../training.py TeleportingStaticViT Summer2024Official "Training Model on Teleporting Static Data with ViT" ViT Teleporting100kData  
-srun --nodes=1 --ntasks=1 --exclusive python ./../training.py TeleportingRand10ViT Summer2024Official "Training Model on Teleporting Randomized Textures every 10 Data with ViT" ViT Teleporting100kRandEvery10Data
-srun --nodes=1 --ntasks=1 --exclusive python ./../training.py TeleportingRand50ViT Summer2024Official "Training Model on Teleporting Randomized Textures every 50 Data  with ViT" ViT Teleporting100kRandEvery50Data
-
-# Print the date again to see how long the job took
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py TeleportingStaticViT Summer2024Official "Training Model on Teleporting Static Data with ViT" ViT Teleporting100kData --image_resize 224
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py TeleportingRand10ViT Summer2024Official "Training Model on Teleporting Randomized Textures every 10 Data with ViT" ViT Teleporting100kRandEvery10Data --image_resize 224
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py TeleportingRand50ViT Summer2024Official "Training Model on Teleporting Randomized Textures every 50 Data  with ViT" ViT Teleporting100kRandEvery50Data --image_resize 224
+ --image_resize 224
+# Print the date again to see how long the job took --image_resize 224
 date
