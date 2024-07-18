@@ -385,26 +385,13 @@ def main():
     for trial_num in range(1, args.num_trials + 1):
         # Set randomized initial position after the first trial
         if trial_num != 1:
-            while (
-                agent.initial_position.x - 200
-                > agent.position.x
-                > agent.initial_position.x + 200
-                and agent.initial_position.y - 200
-                > agent.position.y
-                > agent.initial_position.y
-            ):
-                # Create randomized position
-                new_x = agent.position.x + np.random.normal(0, 200)
-                new_y = agent.position.y + np.random.normal(0, 50)
-                # new_x = agent.position.x + random.uniform(-200, 200)
-                # new_y = agent.position.y + random.uniform(-50, 50)
+            # Create randomized position
+            new_x = agent.position.x + random.uniform(-200.0, 200.0)
+            new_y = agent.position.y + random.uniform(-50.0, 50.0)
 
-                # Set random rotation and position
-                # agent.rotation = agent.rotation + np.random.normal(0, radians(8))
-                agent.rotation = agent.rotation + np.random.normal(
-                    radians(-8), radians(8)
-                )
-                agent.position = Pt(new_x, new_y)
+            # Set random rotation and position
+            agent.rotation = agent.rotation + np.random.uniform(radians(-8), radians(8))
+            agent.position = Pt(new_x, new_y)
 
             # Sync the position and rotation
             agent.ue.set_location_xy(agent.position.x, agent.position.y, delay=0.1)
