@@ -8,28 +8,19 @@ from contextlib import contextmanager
 from functools import partial
 from math import degrees, radians
 from pathlib import Path
-import random
-import itertools
 from boxnav.box import Pt
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
-import time
 import numpy as np
 
 from os import chdir
-from pathlib import Path
 from subprocess import run as sprun
 
 import enlighten
-from os import chdir
-import matplotlib.pyplot as plt
-import numpy as np
 import wandb
 from fastai.callback.wandb import WandbCallback
 from fastai.vision.learner import load_learner
-from matplotlib.axes import Axes
 from utils import y_from_filename  # noqa: F401 (needed for fastai load_learner)
-from subprocess import run as sprun
 from time import sleep
 
 from boxnav.boxenv import BoxEnv
@@ -274,9 +265,9 @@ def parse_args():
         help="Set the texture of the environment to alternative option",
     )
     arg_parser.add_argument(
-        "--save_map_video",
-        type=str,
-        help="Directory to create and store gaming-style video with camera view and map",
+        "--save_minimap_video",
+        action="store_true",
+        help="Create and store gaming-style video with camera view and mini-map",
     )
 
     add_box_navigator_arguments(arg_parser)
@@ -340,7 +331,7 @@ def main():
         if args.output_dir:
             check_path(args.output_dir)
 
-    snap_plot = True if args.save_map_video else False
+    snap_plot = True if args.save_minimap_video else False
 
     print("Starting inference.")
 
@@ -544,7 +535,7 @@ def main():
 
     agent.concat_images(agent.image_directory)
 
-    if args.save_map_video is not None:
+    if snap_plot:
         agent.concat_images(agent.animation_directory)
         chdir("..")
 
