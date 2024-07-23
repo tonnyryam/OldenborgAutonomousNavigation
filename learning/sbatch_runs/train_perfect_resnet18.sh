@@ -26,9 +26,9 @@ date
 # Load conda and run the training script
 module load miniconda3
 conda activate s24
-srun --nodes 1 --ntasks 1 --exclusive python training.py PerfectStaticModel Summer2024Official "training off 100k perfect navigator image dataset" ResNet18 Perfect100kData
-srun --nodes 1 --ntasks 1 --exclusive python training.py PerfectRand10Model Summer2024Official "training off 100k perfect navigator every 10 image dataset" ResNet18 Perfect100kRandEvery10Data
-srun --nodes 1 --ntasks 1 --exclusive python training.py PerfectRand50Model Summer2024Official "training off 100k perfect navigator every 50 image dataset" ResNet18 Perfect100kRandEvery50Data
+srun --nodes=1 --ntasks=1 --exclusive python ./../../../training.py PerfectStaticModel Summer2024Official "training off 100k perfect navigator image dataset" ResNet18 Perfect100kData --local_data
+srun --nodes=1 --ntasks=1 --exclusive python ./../../../training.py PerfectRand10Model Summer2024Official "training off 100k perfect navigator every 10 image dataset" ResNet18 Perfect100kRandEvery10Data --local_data
+srun --nodes=1 --ntasks=1 --exclusive python ./../../../training.py PerfectRand50Model Summer2024Official "training off 100k perfect navigator every 50 image dataset" ResNet18 Perfect100kRandEvery50Data --local_data
 
 # Print the name of the node for debugging
 hostname
