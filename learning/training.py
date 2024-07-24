@@ -107,7 +107,7 @@ def setup_wandb(args: Namespace):
         raise Exception("wandb.init() failed")
 
     data_dirs = []
-
+    print(args.dataset_names)
     for dataset_name in args.dataset_names:
         if args.local_data:
             data_dir = dataset_name
