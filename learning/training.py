@@ -272,6 +272,7 @@ def train_model(dls: DataLoaders, args: Namespace, run, rep: int):
     # store the datasets used in metadata
     # TODO: see if can store this in more accessible place
     wandb.log({"Datasets Used": str(args.dataset_names)})
+    wandb.config.update({"Datasets Used": str(args.dataset_names)})
 
     if len(dataset_names) > 1:
         learn_name = f"{wandb_name}-{model_arch}-MultipleDatasets-rep{rep:02}"
