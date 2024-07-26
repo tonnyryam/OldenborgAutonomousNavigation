@@ -107,7 +107,7 @@ def setup_wandb(args: Namespace):
         raise Exception("wandb.init() failed")
 
     data_dirs = []
-    print(args.dataset_names)
+
     for dataset_name in args.dataset_names:
         if args.local_data:
             data_dir = dataset_name
@@ -214,6 +214,11 @@ def run_experiment(args: Namespace, run, dls):
     for rep in range(args.num_replicates):
         learn = train_model(dls, args, run, rep)
 
+        dataset_names = "-".join(args.dataset_names)
+        learn.model_dir = (
+            f"{args.wandb_name}-{args.model_arch}-{dataset_names}-rep{rep:02}"
+        )
+
     return learn
 
 
@@ -269,7 +274,11 @@ def train_model(dls: DataLoaders, args: Namespace, run, rep: int):
     model_arch = args.model_arch
     dataset_names = "-".join(args.dataset_names)
 
-    learn_name = f"{wandb_name}-{model_arch}-{dataset_names}-rep{rep:02}"
+    if len(dataset_names) > 1:
+        learn_name = f"{wandb_name}-{model_arch}-MultipleDatasets-rep{rep:02}"
+    else:
+        learn_name = f"{wandb_name}-{model_arch}-{dataset_names}-rep{rep:02}"
+
     learn_filename = learn_name + ".pkl"
     learn.export(learn_filename)
 
