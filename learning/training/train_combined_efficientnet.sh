@@ -1,9 +1,9 @@
 #!/bin/bash -l
 
-#SBATCH --job-name="TrainTeleportingModelsConvNextV2Atto-Summer2024Official"
+#SBATCH --job-name="TrainCombinedModelsEfficientNet-Summer2024Official"
 #SBATCH --time=2-00:00:00
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:v100:1
 #SBATCH --mem=40G
 #SBATCH --mail-user=tfrw2023@mymail.pomona.edu
 #SBATCH --mail-type=ALL
@@ -29,9 +29,9 @@ module load miniconda3
 conda activate s24 
 
 # Run training script
-srun --nodes=1 --ntasks=1 --exclusive python training.py TeleportingStaticConvNextV2Atto Summer2024Official "Training Model on Teleporting Static Data with ConvNextV2Atto" ConvNextV2Atto Teleporting100kData --local_data
-srun --nodes=1 --ntasks=1 --exclusive python training.py TeleportingRand10ConvNextV2Atto Summer2024Official "Training Model on Teleporting Randomized Textures every 10 Data with ConvNextV2Atto" ConvNextV2Atto Teleporting100kRandEvery10Data --local_data
-srun --nodes=1 --ntasks=1 --exclusive python training.py TeleportingRand50ConvNextV2Atto Summer2024Official "Training Model on Teleporting Randomized Textures every 50 Data  with ConvNextV2Atto" ConvNextV2Atto Teleporting100kRandEvery50Data --local_data
+srun --nodes=1 --ntasks=1 --exclusive python training.py CombinedStaticEfficientNet Summer2024Official "Training Model on All Static Datasets with EfficientNet" EfficientNet Perfect100kData Wandering100kData Teleporting100kData --local_data
+srun --nodes=1 --ntasks=1 --exclusive python training.py CombinedRand10EfficientNet Summer2024Official "Training Model on All Randomized Textures every 10 Datasets with EfficientNet" EfficientNet Perfect100kRandEvery10Data Wandering100kRandEvery10Data Teleporting100kRandEvery10Data --local_data
+srun --nodes=1 --ntasks=1 --exclusive python training.py CombinedRand50EfficientNet Summer2024Official "Training Model on All Randomized Textures every 50 Datasets with EfficientNet" EfficientNet Perfect100kRandEvery50Data Wandering100kRandEvery50Data Teleporting100kRandEvery50Data --local_data
 
 # Print the date again to see how long the job took
 date
