@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#SBATCH --job-name="TrainCombinedModelsViT-Summer2024Official"
+#SBATCH --job-name="TrainCombinedModelsMobileNetV4-Summer2024Official"
 #SBATCH --time=2-00:00:00
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:v100:1
@@ -29,9 +29,9 @@ module load miniconda3
 conda activate s24 
 
 # Run training script
-srun --nodes=1 --ntasks=1 --exclusive python ./../training.py CombinedStaticViT Summer2024Official "Training Model on All Static Datasets with ViT" ViT Perfect100kData Wandering100kData Teleporting100kData --local_data
-srun --nodes=1 --ntasks=1 --exclusive python ./../training.py CombinedRand10ViT Summer2024Official "Training Model on All Randomized Textures every 10 Datasets with ViT" ViT Perfect100kRandEvery10Data Wandering100kRandEvery10Data Teleporting100kRandEvery10Data --local_data
-srun --nodes=1 --ntasks=1 --exclusive python ./../training.py CombinedRand50ViT Summer2024Official "Training Model on All Randomized Textures every 50 Datasets with ViT" ViT Perfect100kRandEvery50Data Wandering100kRandEvery50Data Teleporting100kRandEvery50Data --local_data
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py CombinedStaticMobileNetV4 Summer2024Official "Training Model on All Static Datasets with MobileNetV4" MobileNetV4 Perfect100kData Wandering100kData Teleporting100kData --local_data
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py CombinedRand10MobileNetV4 Summer2024Official "Training Model on All Randomized Textures every 10 Datasets with MobileNetV4" MobileNetV4 Perfect100kRandEvery10Data Wandering100kRandEvery10Data Teleporting100kRandEvery10Data --local_data
+srun --nodes=1 --ntasks=1 --exclusive python ./../training.py CombinedRand50MobileNetV4 Summer2024Official "Training Model on All Randomized Textures every 50 Datasets with MobileNetV4" MobileNetV4 Perfect100kRandEvery50Data Wandering100kRandEvery50Data Teleporting100kRandEvery50Data --local_data
 
 # Print the date again to see how long the job took
 date
