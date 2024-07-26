@@ -269,7 +269,16 @@ def train_model(dls: DataLoaders, args: Namespace, run, rep: int):
     model_arch = args.model_arch
     dataset_names = "-".join(args.dataset_names)
 
-    learn_name = f"{wandb_name}-{model_arch}-{dataset_names}-rep{rep:02}"
+    # store the datasets used in metadata
+    # TODO: see if can store this in more accessible place
+    wandb.log({"Datasets Used": str(args.dataset_names)})
+    wandb.config.update({"Datasets Used": str(args.dataset_names)})
+
+    if len(dataset_names) > 1:
+        learn_name = f"{wandb_name}-{model_arch}-MultipleDatasets-rep{rep:02}"
+    else:
+        learn_name = f"{wandb_name}-{model_arch}-{dataset_names}-rep{rep:02}"
+
     learn_filename = learn_name + ".pkl"
     learn.export(learn_filename)
 
