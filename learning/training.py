@@ -270,11 +270,8 @@ def train_model(dls: DataLoaders, args: Namespace, run, rep: int):
     dataset_names = "-".join(args.dataset_names)
 
     # store the datasets used in metadata
-    learn.model_dir = f"{wandb_name}-{model_arch}-{dataset_names}-rep{rep:02}"
-    wandb.log({"Datasets Used": dataset_names})  # Add to Meadata (?)
-    wandb.summary["Dataset Info"] = {
-        str(args.dataset_names)
-    }  # Add to version overview (?)
+    # TODO: see if can store this in more accessible place
+    wandb.log({"Datasets Used": str(args.dataset_names)})
 
     if len(dataset_names) > 1:
         learn_name = f"{wandb_name}-{model_arch}-MultipleDatasets-rep{rep:02}"
