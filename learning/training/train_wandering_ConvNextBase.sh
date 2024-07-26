@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#SBATCH --job-name="TrainTeleportingModels-Summer2024Official"
+#SBATCH --job-name="TrainWanderingModelsConvNextV2Base-Summer2024Official"
 #SBATCH --time=2-00:00:00
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
@@ -29,9 +29,9 @@ module load miniconda3
 conda activate s24 
 
 # Run training script
-srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingStaticModel Summer2024Official "Training Model on Teleporting Static Data with MobileNetV4" MobileNetV4 Teleporting100kData  
-srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingRand10Model Summer2024Official "Training Model on Teleporting Randomized Textures every 10 Data with MobileNetV4" MobileNetV4 Teleporting100kRandEvery10Data
-srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingRand50Model Summer2024Official "Training Model on Teleporting Randomized Textures every 50 Data  with MobileNetV4" MobileNetV4 Teleporting100kRandEvery50Data
+# srun --nodes 1 --ntasks 1 --exclusive python training.py WanderingStaticConvNextV2Base Summer2024Official "Training Model on Wandering Static Data with ConvNextV2Base" ConvNextV2Base Wandering100kData --local_data
+# srun --nodes 1 --ntasks 1 --exclusive python training.py WanderingRand10ConvNextV2Base Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with ConvNextV2Base" ConvNextV2Base Wandering100kRandEvery10Data --local_data
+srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingRand50ConvNextV2Base Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data with ConvNextV2Base" ConvNextV2Base Wandering100kRandEvery50Data --local_data
 
 # Print the date again to see how long the job took
 date

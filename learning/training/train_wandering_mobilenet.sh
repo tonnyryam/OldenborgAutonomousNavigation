@@ -1,11 +1,11 @@
 #!/bin/bash -l
 
-#SBATCH --job-name="TrainTeleportingModelsConvNextV2Base-Summer2024Official"
+#SBATCH --job-name="TrainWanderingModelsMobileNetV4-Summer2024Official"
 #SBATCH --time=2-00:00:00
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:a100:1
+#SBATCH --gres=gpu:1
 #SBATCH --mem=40G
-#SBATCH --mail-user=tfrw2023@mymail.pomona.edu
+#SBATCH --mail-user=kjad2022@mymail.pomona.edu
 #SBATCH --mail-type=ALL
 
 # Steps to run a training script on the cluster:
@@ -29,9 +29,9 @@ module load miniconda3
 conda activate s24 
 
 # Run training script
-srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingStaticConvNextV2Base Summer2024Official "Training Model on Teleporting Static Data with ConvNextV2Base" ConvNextV2Base Teleporting100kData  
-srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingRand10ConvNextV2Base Summer2024Official "Training Model on Teleporting Randomized Textures every 10 Data with ConvNextV2Base" ConvNextV2Base Teleporting100kRandEvery10Data
-srun --nodes 1 --ntasks 1 --exclusive python training.py TeleportingRand50ConvNextV2Base Summer2024Official "Training Model on Teleporting Randomized Textures every 50 Data  with ConvNextV2Base" ConvNextV2Base Teleporting100kRandEvery50Data
+srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingStaticMobileNetV4 Summer2024Official "Training Model on Wandering Static Data with MobileNetV4" MobileNetV4 Wandering100kData --local_data
+srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingRand10MobileNetV4 Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with MobileNetV4" MobileNetV4 Wandering100kRandEvery10Data --local_data
+srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingRand50MobileNetV4 Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data  with MobileNetV4" MobileNetV4 Wandering100kRandEvery50Data --local_data
 
 # Print the date again to see how long the job took
 date

@@ -1,6 +1,6 @@
 #!/bin/bash -l
 
-#SBATCH --job-name="TrainPerfectModelsConvNextV2Base-Summer2024Official"
+#SBATCH --job-name="TrainWanderingModelsConvNextV2Atto-Summer2024Official"
 #SBATCH --time=2-00:00:00
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:a100:1
@@ -29,9 +29,9 @@ module load miniconda3
 conda activate s24 
 
 # Run training script
-srun --nodes 1 --ntasks 1 --exclusive python training.py PerfectStaticConvNextV2Base Summer2024Official "Training Model on Perfect Static Data with ConvNextV2Base" ConvNextV2Base Perfect100kData  
-srun --nodes 1 --ntasks 1 --exclusive python training.py PerfectRand10ConvNextV2Base Summer2024Official "Training Model on Perfect Randomized Textures every 10 Data with ConvNextV2Base" ConvNextV2Base Perfect100kRandEvery10Data
-srun --nodes 1 --ntasks 1 --exclusive python training.py PerfectRand50ConvNextV2Base Summer2024Official "Training Model on Perfect Randomized Textures every 50 Data  with ConvNextV2Base" ConvNextV2Base Perfect100kRandEvery50Data
+srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingStaticConvNextV2Atto Summer2024Official "Training Model on Wandering Static Data with ConvNextV2Atto" ConvNextV2Atto Wandering100kData --local_data
+srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingRand10ConvNextV2Atto Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with ConvNextV2Atto" ConvNextV2Atto Wandering100kRandEvery10Data --local_data
+srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingRand50ConvNextV2Atto Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data  with ConvNextV2Atto" ConvNextV2Atto Wandering100kRandEvery50Data --local_data
 
 # Print the date again to see how long the job took
 date

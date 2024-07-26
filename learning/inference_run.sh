@@ -70,7 +70,6 @@ python inference.py InferenceTeleportingStaticConvNextV2Base Summer2024Official 
 python inference.py InferenceTeleportingRand10ConvNextV2Base Summer2024Official "Run 5 inference trials on Teleporting Randomized Textures every 10 model trained on ConvNextV2Base" TeleportingRand10ConvNextV2Base-ConvNextV2Base-Teleporting100kRandEvery10Data-rep00 InferenceTeleportingRand10ConvNextV2Base --max_actions 500 --num_trials 5 --save_minimap_video 
 python inference.py InferenceTeleportingRand50ConvNextV2Base Summer2024Official "Run 5 inference trials on Teleporting Randomized Textures every 50 model trained on ConvNextV2Base" TeleportingRand50ConvNextV2Base-ConvNextV2Base-Teleporting100kRandEvery50Data-rep00 InferenceTeleportingRand50ConvNextV2Base --max_actions 500 --num_trials 5 --save_minimap_video 
 
-
 # Inference on ViT
 python inference.py InferencePerfectStaticViT Summer2024Official "Run 5 inference trials on Perfect Static model trained on ViT" PerfectStaticViT-ViT-Perfect100kData-rep00 InferencePerfectStaticViT --max_actions 500 --num_trials 5 --save_minimap_video 
 python inference.py InferencePerfectRand10ViT Summer2024Official "Run 5 inference trials on Perfect Randomized Textures every 10 model trained on ViT" PerfectRand10ViT-ViT-Perfect100kRandEvery10Data-rep00 InferencePerfectRand10ViT --max_actions 500 --num_trials 5 --save_minimap_video 
