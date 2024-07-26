@@ -214,11 +214,6 @@ def run_experiment(args: Namespace, run, dls):
     for rep in range(args.num_replicates):
         learn = train_model(dls, args, run, rep)
 
-        dataset_names = "-".join(args.dataset_names)
-        learn.model_dir = (
-            f"{args.wandb_name}-{args.model_arch}-{dataset_names}-rep{rep:02}"
-        )
-
     return learn
 
 
@@ -273,6 +268,8 @@ def train_model(dls: DataLoaders, args: Namespace, run, rep: int):
     wandb_name = args.wandb_name
     model_arch = args.model_arch
     dataset_names = "-".join(args.dataset_names)
+
+    learn.model_dir = f"{args.wandb_name}-{args.model_arch}-{dataset_names}-rep{rep:02}"
 
     if len(dataset_names) > 1:
         learn_name = f"{wandb_name}-{model_arch}-MultipleDatasets-rep{rep:02}"
