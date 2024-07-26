@@ -300,7 +300,9 @@ def main():
         raise Exception("wandb.init() failed")
 
     # Download the fastai learner
-    artifact = run.use_artifact(f"{wandb_model}:latest", type="model")
+    artifact = run.use_artifact(wandb_model, type="model")
+    wandb_model = wandb_model.split(":")
+    wandb_model = wandb_model[0]
     model_dir = artifact.download()
     model_filename = Path(model_dir) / (wandb_model + ".pkl")
 
