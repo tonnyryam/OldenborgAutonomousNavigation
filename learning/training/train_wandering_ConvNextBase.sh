@@ -28,8 +28,7 @@ hostname
 module load miniconda3
 conda activate s24 
 
-# Run training script
-# srun --nodes 1 --ntasks 1 --exclusive python training.py WanderingStaticConvNextV2Base Summer2024Official "Training Model on Wandering Static Data with ConvNextV2Base" ConvNextV2Base Wandering100kData --local_data
+# Run training scriptsrun --nodes 1 --ntasks 1 --exclusive python training.py WanderingStaticConvNextV2Base Summer2024Official "Training Model on Wandering Static Data with ConvNextV2Base" ConvNextV2Base Wandering100kData --local_data
 # srun --nodes 1 --ntasks 1 --exclusive python training.py WanderingRand10ConvNextV2Base Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with ConvNextV2Base" ConvNextV2Base Wandering100kRandEvery10Data --local_data
 srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingRand50ConvNextV2Base Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data with ConvNextV2Base" ConvNextV2Base Wandering100kRandEvery50Data --local_data
 
