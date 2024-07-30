@@ -29,9 +29,9 @@ module load miniconda3
 conda activate s24 
 
 # Run training script
-srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingStaticViT Summer2024Official "Training Model on Wandering Static Data with ViT" ViT Wandering100kData --local_data
-srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingRand10ViT Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with ViT" ViT Wandering100kRandEvery10Data --local_data
-srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingRand50ViT Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data  with ViT" ViT Wandering100kRandEvery50Data --local_data
+srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingStaticViT Summer2024Official "Training Model on Wandering Static Data with ViT" ViT Wandering100kData --local_data --image_resize 224
+srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingRand10ViT Summer2024Official "Training Model on Wandering Randomized Textures every 10 Data with ViT" ViT Wandering100kRandEvery10Data --local_data --image_resize 224
+srun --nodes=1 --ntasks=1 --exclusive python training.py WanderingRand50ViT Summer2024Official "Training Model on Wandering Randomized Textures every 50 Data  with ViT" ViT Wandering100kRandEvery50Data --local_data --image_resize 224
 
 # Print the date again to see how long the job took
 date

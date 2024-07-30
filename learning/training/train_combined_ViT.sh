@@ -1,9 +1,9 @@
 #!/bin/bash -l
 
-#SBATCH --job-name="TrainTeleportingModels-Summer2024Official"
+#SBATCH --job-name="TrainCombinedModelsViT-Summer2024Official"
 #SBATCH --time=2-00:00:00
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:a100:1
+#SBATCH --gres=gpu:v100:1
 #SBATCH --mem=40G
 #SBATCH --mail-user=tfrw2023@mymail.pomona.edu
 #SBATCH --mail-type=ALL
@@ -29,9 +29,9 @@ module load miniconda3
 conda activate s24 
 
 # Run training script
-srun --nodes=1 --ntasks=1 --exclusive python training.py CombinedStaticResNet18 Summer2024Official "Training Model on All Static Datasets with ResNet18" ResNet18 Perfect100kData Wandering100kData Teleporting100kData --image_resize 224 --local_data
-srun --nodes=1 --ntasks=1 --exclusive python training.py CombinedRand10ResNet18 Summer2024Official "Training Model on All Randomized Textures every 10 Datasets with ResNet18" ResNet18 Perfect100kRandEvery10Data Wandering100kRandEvery10Data Teleporting100kRandEvery10Data --image_resize 224 --local_data
-srun --nodes=1 --ntasks=1 --exclusive python training.py CombinedRand50ResNet18 Summer2024Official "Training Model on All Randomized Textures every 50 Datasets with ResNet18" ResNet18 Perfect100kRandEvery50Data Wandering100kRandEvery50Data Teleporting100kRandEvery50Data --image_resize 224 --local_data
+srun --nodes=1 --ntasks=1 --exclusive python training.py CombinedStaticViT Summer2024Official "Training Model on All Static Datasets with ViT" ViT Perfect100kData Wandering100kData Teleporting100kData --local_data --image_resize 224
+srun --nodes=1 --ntasks=1 --exclusive python training.py CombinedRand10ViT Summer2024Official "Training Model on All Randomized Textures every 10 Datasets with ViT" ViT Perfect100kRandEvery10Data Wandering100kRandEvery10Data Teleporting100kRandEvery10Data --local_data --image_resize 224
+srun --nodes=1 --ntasks=1 --exclusive python training.py CombinedRand50ViT Summer2024Official "Training Model on All Randomized Textures every 50 Datasets with ViT" ViT Perfect100kRandEvery50Data Wandering100kRandEvery50Data Teleporting100kRandEvery50Data --local_data --image_resize 224
 
 # Print the date again to see how long the job took
 date
