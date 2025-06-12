@@ -23,15 +23,14 @@ conda activate ENVIRONMENT
 # Runs a navigator in Python and the simulation environment
 # This will run on a system that can run Unreal Engine
 # Open unreal engine before running code (ie. ARCSAssets.exe)
-    # This will steal your mouse, run on split screen and use Alt+tab to navigate between screens
+#   This will steal your mouse, run on split screen and use Alt+tab to navigate between screens
 cd boxnav
 python boxsim.py NAVIGATOR --save_images IMAGE_DIRECTORY
 
 # Uploads the dataset to the server
 # You can upload from wherever the data is generated (probably the same system as above)
 # For first time: Terminal will ask you to log-in to wandb
-    # *When asked to authorize, authentication code will be hidden when pasted so hit
-    # ctrl+v once and hit enter
+#   When asked to authorize, authentication code will be hidden when pasted so hit ctrl+v once and hit enter
 cd learning
 python upload_data.py DATA_NAME PROJECT_NAME "Sample description of uploading run..." IMAGE_DIRECTORY
 
@@ -56,3 +55,5 @@ Some things to do
 
 - Work through the TODOs
 - Consolidate all training shell scripts into one that takes arguments
+- Clean up calibration script
+- Remove jetbot utils script?
