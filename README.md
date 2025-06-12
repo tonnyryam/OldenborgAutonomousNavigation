@@ -2,10 +2,26 @@
 
 Code for training machine learning models to navigate our Oldenborg simulation environment.
 
-- `ue5osc`: Code to communicate between Unreal Engine 5 (or packaged simulations) and Python
-- `boxnav`: Code to compute "correct" actions based on the agent's location in simulation
-- `learning`: Code to train machine learning models to navigate the simulation
+- `boxnav`: generate datasets using a map and Unreal Engin
+- `jetbot`: run inference on a JetBot
+- `learning`: train models to navigate the simulation
+- `ue5osc`: communicate between Unreal Engine (or packaged simulations) and Python
 
+Setup
+
+~~~bash
+# Create the environment
+mamba env create -f arcs-su25.yml
+mamba activate arcs-su25
+
+# Install boxnav (when collecting data or running simulation-based inference)
+cd boxnav
+python -m pip install --editable .
+
+# Install ue5osc (when collecting data for running simulation-based inference)
+cd ue5osc
+python -m pip install --editable .
+~~~
 
 ## Workflow
 
