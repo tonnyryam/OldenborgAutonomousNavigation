@@ -73,3 +73,5 @@ Some things to do
 - Consolidate all training shell scripts into one that takes arguments
 - Clean up calibration script
 - Remove jetbot utils script?
+- Add information on using sbatch scripts
+- Create a separate environment file for the JetBot
