@@ -18,6 +18,7 @@
     "fcmae",
     "fontsize",
     "fontweight",
+    "libx",
     "linestyle",
     "loguru",
     "markersize",

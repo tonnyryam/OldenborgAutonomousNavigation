@@ -4,11 +4,12 @@ from math import atan2, cos, degrees, inf, radians, sin
 from pathlib import Path
 from random import choice, random, randrange, uniform
 from typing import Callable
-from time import sleep
 
 from celluloid import Camera
 from matplotlib import pyplot as plt
 from matplotlib.patches import Arrow, Rectangle, Wedge
+
+# TODO: consider alternatives to using os here
 from os import chdir
 from subprocess import run as sprun
 
@@ -782,7 +783,7 @@ class BoxNavigator:
                 # "-c:v" sets the codec and specifies it is for video stream and "libx264" specifies the codec to encode the video stream
                 # "-c:v",
                 # "libx264",
-                # "-pix_fmt" specifies the pixel format for the output video and "yuv420p" is a pixel format using YUV color space and 4:2:0 chroma subsampling
+                # "-pix_fmt" specifies the pixel format for the output video and "yuv420p" is a pixel format using YUV color space and 4:2:0 chroma sub-sampling
                 # encoding for dumb players
                 "-pix_fmt",
                 "yuv420p",
