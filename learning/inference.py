@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 import numpy as np
 
+# TODO: consider an alternative to os
 from os import chdir
 from subprocess import run as sprun
 
@@ -21,7 +22,6 @@ import wandb
 from fastai.callback.wandb import WandbCallback
 from fastai.vision.learner import load_learner
 from utils import y_from_filename  # noqa: F401 (needed for fastai load_learner)
-from time import sleep
 
 from boxnav.boxenv import BoxEnv
 from boxnav.boxnavigator import (
@@ -66,7 +66,6 @@ image_file_names = []
 
 
 def inference_func(model, image_file: str, action_prev: Action):
-    # global action_prev
 
     # store image file name for data collection
     # TODO: change to use pathlib
@@ -333,6 +332,7 @@ def main():
         if args.output_dir:
             check_path(args.output_dir)
 
+    # TODO: fix this and consider a different name
     snap_plot = True if args.save_minimap_video else False
 
     print("Starting inference.")
