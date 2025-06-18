@@ -33,7 +33,7 @@ from fastai.vision.learner import (
 from fastai.vision.utils import get_image_files
 from torch import nn
 
-from training.training import AlbumentationsTransform, get_train_aug, get_valid_aug
+from albumentations import AlbumentationsTransform, get_train_aug, get_valid_aug
 
 
 def parse_args() -> Namespace:
