@@ -37,13 +37,15 @@ def get_train_aug():
     """Data augmentations applied to training data."""
     return A.Compose(
         [
-            A.VerticalFlip(p=0.5),  # 50% chance to flip vertically
             A.Affine(
-                scale=(0.9, 1.1), translate_percent=0.1, rotate=(-10, 10), p=0.5
-            ),  # 50% chance to shift, scale, and rotate
+                scale=(0.9, 1.1),  # scale by 90%-110% of original size
+                translate_percent=0.1,  # shift horizontally or vertically by up to 10% of its width/height
+                rotate=(-10, 10),  # rotate between -10 and 10 degrees
+                p=0.5,  # 50 chance to apply affine transformations
+            ),
             A.RandomBrightnessContrast(
-                p=0.2
-            ),  # 20% chance to adjust brightness and contrast
+                p=0.2  # 20% chance to adjust brightness and contrast
+            ),
         ]
     )
 
