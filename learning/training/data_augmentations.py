@@ -17,7 +17,7 @@ class AlbumentationsTransform(RandTransform):
         self.split_idx = split_idx  # indicates whether the transform is applied to training or validation data
         self.order = 2  # apply after resizing
 
-    def before_call(self, split_idx):
+    def before_call(self, b, split_idx):
         """Called before the transform is applied to set the split index so we know if it's training or validation."""
         self.idx = split_idx
 
@@ -38,8 +38,8 @@ def get_train_aug():
     return A.Compose(
         [
             A.VerticalFlip(p=0.5),  # 50% chance to flip vertically
-            A.ShiftScaleRotate(
-                shift_limit=0.1, scale_limit=0.1, rotate_limit=10, p=0.5
+            A.Affine(
+                scale=(0.9, 1.1), translate_percent=0.1, rotate=(-10, 10), p=0.5
             ),  # 50% chance to shift, scale, and rotate
             A.RandomBrightnessContrast(
                 p=0.2
