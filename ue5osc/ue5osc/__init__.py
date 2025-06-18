@@ -17,6 +17,13 @@ class TexturedSurface(IntEnum):
 NUM_TEXTURES = 42
 
 
+class Light(IntEnum):
+    SKY = 0
+
+
+LIGHT_INTENSITIES = 1  # placeholder
+
+
 class Communicator:
     """This handles interaction between the UE5 environment and a Python script."""
 
@@ -136,8 +143,12 @@ class Communicator:
         sleep(delay)
 
     def set_texture(self, object: TexturedSurface, material: int) -> None:
-        """Set the texture of walls/floors/ceilings to a different material"""
+        """Set the texture of walls/floors/ceilings to a different material."""
         self.client.send_message("/set/texture", [object, material])
+
+    def set_lighting(self, light_name: Light, intensity: int) -> None:
+        """Set the lighting of the environment."""
+        self.client.send_message("/set/light", [light_name, intensity])
 
     def reset(self, delay: float = 0.0) -> None:
         """Reset agent to the start location using a UE Blueprint command."""
