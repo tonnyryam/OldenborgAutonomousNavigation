@@ -1,4 +1,4 @@
-import albumentations as A
+import learning.training.data_augmentations as A
 import numpy as np
 from fastai.vision.core import PILImage
 from fastai.vision.augment import RandTransform
