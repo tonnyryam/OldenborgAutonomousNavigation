@@ -8,4 +8,24 @@ The JetBot captures an image, saves it locally, and calls the model inference fu
 
 `model_server.py` This file starts the RPC server and is responsible for downloading the model from WandB, loading the model, running the inference, and returning the motion direction.
 
+```bash
+cd /home/jetbot/arcs/OldenborgAutonomousNavigation/jetbot
+
+mamba activate arcs-su25
+
+# Run the model server using the conda Python interpreter
+python3 model_server.py
+python model_server.py --wandb_name "jetbot-test" --wandb_project "summer2025-del" --wandb_model "test1-ResNet18-test-rep00" --wandb-notes "Testing the model server."
+```
+
 `robot_client.py` This file starts the RPC client and is responsible for capturing an image, un-distorting it, saving it locally, calling the model inference function with the image filename, and then calling the robot motion function with the motion direction.
+
+The robot client currently relies on the calibration images. This will need to change, but in the meantime, you'll need to copy the calibration images from our box folder (`/Users/ajcd2020/Library/CloudStorage/Box-Box/_mine/ARCSStorage/ARCSCloud/Images/JetBot1Calibration.zip`) to `camera_calibration/images`.
+
+```bash
+# In a separate terminal
+cd /home/jetbot/arcs/OldenborgAutonomousNavigation/jetbot
+
+# Run the robot client using the system Python3 interpreter
+/usr/bin/python3 robot_client.py
+```

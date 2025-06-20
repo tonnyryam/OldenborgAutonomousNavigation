@@ -79,7 +79,7 @@ def calibrate_camera():
     all_object_points = []
     all_image_points = []
 
-    path = Path(__file__).resolve().parent / "camera_calibration" / "good_images"
+    path = Path(__file__).resolve().parent / "camera_calibration" / "images"
 
     files = Path(path).glob("*.png")
 
