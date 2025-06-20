@@ -87,6 +87,8 @@ def calibrate_camera():
 
     files = Path(path).glob("*.png")
 
+    # TODO: we should only compute the camera calibration once, not every time we run the robot client
+    #
     for image_file in files:
         img = cv2.imread(str(image_file))
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
