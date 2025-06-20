@@ -19,10 +19,8 @@ class RPCServer:
         "Registers a single function/method for remote invocation by clients."
         try:
             self._methods.update({function.__name__: function})
-        except Exception as e:
-            raise Exception(
-                "A non-function object has been passed into RPCServer.registerMethod"
-            ) from e
+        except Exception:
+            raise Exception("Cannot register a non-function object")
 
     def registerInstance(self, instance=None) -> None:
         "Registers all methods of an instance of a class for remote invocation by clients."
@@ -30,10 +28,8 @@ class RPCServer:
             for functionName, function in getmembers(instance, predicate=ismethod):
                 if not functionName.startswith("__"):
                     self._methods.update({functionName: function})
-        except Exception as e:
-            raise Exception(
-                "A non-class object has been passed into RPCServer.registerInstance"
-            ) from e
+        except Exception:
+            raise Exception("Cannot register a non-class object")
 
     def __handle__(self, client: socket.socket, address: tuple) -> None:
         "Handles incoming client requests by executing the requested function and sending back the result."
