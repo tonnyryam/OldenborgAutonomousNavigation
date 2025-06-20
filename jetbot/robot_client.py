@@ -1,6 +1,6 @@
 # Import necessary modules
+import argparse
 import os
-from dataclasses import dataclass
 from pathlib import Path
 from queue import Queue
 from threading import Event, Thread
@@ -8,19 +8,10 @@ from time import sleep
 
 import cv2
 import numpy as np
-import tyro
 from PIL import Image
 from rpc import RPCClient
 
 from jetbot import Camera, Robot
-
-
-@dataclass
-class Args:
-    output_dir: str = "./run_saved_images"
-    max_actions: int = 150
-    speed: float = 2.5
-    duration: float = 1.0
 
 
 class Bot:
@@ -133,7 +124,21 @@ def keyboard_kill_switch(q: Queue, done: Event):
 
 
 def main():
-    args = tyro.cli(Args)
+    parser = argparse.ArgumentParser(description="Jetbot Robot Client")
+    parser.add_argument(
+        "--output_dir",
+        type=str,
+        default="./run_saved_images",
+        help="Directory to save images",
+    )
+    parser.add_argument(
+        "--max_actions", type=int, default=150, help="Maximum number of actions"
+    )
+    parser.add_argument("--speed", type=float, default=2.5, help="Speed of the robot")
+    parser.add_argument(
+        "--duration", type=float, default=1.0, help="Duration of each action (seconds)"
+    )
+    args = parser.parse_args()
 
     # Establish connection with the RPC server
     server = RPCClient("127.0.0.1", 8033)
