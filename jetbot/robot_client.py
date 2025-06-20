@@ -1,6 +1,4 @@
-# Import necessary modules
-import argparse
-import os
+from argparse import ArgumentParser
 from pathlib import Path
 from queue import Queue
 from threading import Event, Thread
@@ -81,9 +79,7 @@ def calibrate_camera():
     all_object_points = []
     all_image_points = []
 
-    path = (
-        os.path.dirname(os.path.abspath(__file__)) + "/camera_calibration/good_images"
-    )
+    path = Path(__file__).resolve().parent / "camera_calibration" / "good_images"
 
     files = Path(path).glob("*.png")
 
@@ -126,11 +122,11 @@ def keyboard_kill_switch(q: Queue, done: Event):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Jetbot Robot Client")
+    parser = ArgumentParser(description="Jetbot Robot Client")
     parser.add_argument(
         "--output_dir",
         type=str,
-        default="./run_saved_images",
+        default="./saved_images",
         help="Directory to save images",
     )
     parser.add_argument(
