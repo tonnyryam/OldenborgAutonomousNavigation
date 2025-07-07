@@ -54,11 +54,12 @@ python upload_data.py DATA_NAME PROJECT_NAME "Sample description of uploading ru
 # This should be run on a system with a GPU (e.g., our server)
 # training.py, sbatch scripts, and datasets should be in the same directory on the server (could be learning)
 cd learning
-python training.py MODEL_NAME PROJECT_NAME "Sample description of training run..." ARCHITECTURE_NAME DATA_NAME(S) --local_data
+python training.py MODEL_NAME PROJECT_NAME "Sample description of training run..." ARCHITECTURE_NAME DATA_NAME(S) --local_data --use_augmentation
 
 # Performs inference
 # This will run on a system that can run Unreal Engine
 # Note: MODEL_NAME_FROM_WANDB can be found in arcslaboratory -> Projects -> PROJECT_NAME -> Artifacts
+# data_augmentations.py must be in same directory as inference.py if performing inference on a model trained with data augmentation
 cd learning
 python inference.py INFERENCE_NAME PROJECT_NAME "Sample description of inference run..." MODEL_NAME_FROM_WANDB:VERSION IMAGE_SAVE_FOLDER_NAME
 ~~~

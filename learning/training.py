@@ -73,6 +73,11 @@ def parse_args() -> Namespace:
 
     # Training configuration
     arg_parser.add_argument(
+        "--use_augmentation",
+        action="store_true",
+        help="Enable data augmentation if included (default is off).",
+    )
+    arg_parser.add_argument(
         "--num_epochs", type=int, default=10, help="Number of training epochs."
     )
     arg_parser.add_argument(
@@ -169,10 +174,6 @@ def get_dls(args: Namespace, data_paths: list):
             args, data_paths, image_filenames, label_func
         )
     else:
-        albumentations_tfms = AlbumentationsTransform(
-            get_train_aug(), get_valid_aug()
-        )  # object to provide data augmentation logic
-
         return ImageDataLoaders.from_name_func(
             data_paths[0],  # TODO: find a better place to save models
             image_filenames,
@@ -182,8 +183,10 @@ def get_dls(args: Namespace, data_paths: list):
             bs=args.batch_size,
             item_tfms=Resize(args.image_resize),
             batch_tfms=[
-                albumentations_tfms
-            ],  # apply data augmentations by batch after resizing
+                AlbumentationsTransform(get_train_aug(), get_valid_aug())
+            ]  # object to provide data augmentation logic
+            if args.use_augmentation  # apply data augmentations by batch after resizing if indicated in args
+            else [],
         )
 
 
