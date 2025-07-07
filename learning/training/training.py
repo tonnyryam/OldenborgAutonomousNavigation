@@ -128,19 +128,28 @@ def get_angle_from_filename(filename: str) -> float:
 
 
 def y_from_filename(rotation_threshold: float, filename: str) -> str:
-    """Extracts the direction label from the filename of an image.
+    path = Path(filename)
+    filename_stem = path.stem
+    parts = filename_stem.split("_")
+    direction_keywords = {"left", "right", "forward"}
 
-    Example: "path/to/file/001_000011_-1p50.png" --> "right"
-    """
-    filename_stem = Path(filename).stem
-    angle = float(filename_stem.split("_")[2].replace("p", "."))
+    # Case 1: filename starts with a known direction keyword
+    if parts[0].lower() in direction_keywords:
+        return parts[0].lower()
 
-    if angle > rotation_threshold:
-        return "left"
-    elif angle < -rotation_threshold:
-        return "right"
-    else:
-        return "forward"
+    # Case 2: try to parse angle from filename
+    try:
+        angle_str = parts[2].replace("p", ".")
+        angle = float(angle_str)
+        if angle > rotation_threshold:
+            return "left"
+        elif angle < -rotation_threshold:
+            return "right"
+        else:
+            return "forward"
+    except (IndexError, ValueError):
+        # Fall back to folder name if all else fails
+        return path.parent.name.lower()
 
 
 def get_dls(args: Namespace, data_paths: list):
