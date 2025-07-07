@@ -133,23 +133,26 @@ def y_from_filename(rotation_threshold: float, filename: str) -> str:
     parts = filename_stem.split("_")
     direction_keywords = {"left", "right", "forward"}
 
-    # Case 1: filename starts with a known direction keyword
+    # Case 1: filename starts with a known direction
     if parts[0].lower() in direction_keywords:
         return parts[0].lower()
 
-    # Case 2: try to parse angle from filename
-    try:
-        angle_str = parts[2].replace("p", ".")
-        angle = float(angle_str)
-        if angle > rotation_threshold:
-            return "left"
-        elif angle < -rotation_threshold:
-            return "right"
-        else:
-            return "forward"
-    except (IndexError, ValueError):
-        # Fall back to folder name if all else fails
-        return path.parent.name.lower()
+    # Case 2: try to parse angle from third underscore-separated part
+    if len(parts) >= 3:
+        try:
+            angle_str = parts[2].replace("p", ".")
+            angle = float(angle_str)
+            if angle > rotation_threshold:
+                return "left"
+            elif angle < -rotation_threshold:
+                return "right"
+            else:
+                return "forward"
+        except ValueError:
+            pass  # fall through to fallback
+
+    # Fallback: get label from parent directory
+    return path.parent.name.lower()
 
 
 def get_dls(args: Namespace, data_paths: list):
