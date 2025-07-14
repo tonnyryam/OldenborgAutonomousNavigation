@@ -33,7 +33,7 @@ from fastai.vision.learner import (
 from fastai.vision.utils import get_image_files
 from torch import nn
 
-from data_augmentations import AlbumentationsTransform, get_train_aug, get_valid_aug
+from fastai.vision.all import aug_transforms, Normalize, imagenet_stats
 
 
 def parse_args() -> Namespace:
@@ -157,10 +157,6 @@ def get_dls(args: Namespace, data_paths: list):
             args, data_paths, image_filenames, label_func
         )
     else:
-        albumentations_tfms = AlbumentationsTransform(
-            get_train_aug(), get_valid_aug()
-        )  # object to provide data augmentation logic
-
         return ImageDataLoaders.from_name_func(
             data_paths[0],  # TODO: find a better place to save models
             image_filenames,
@@ -170,8 +166,21 @@ def get_dls(args: Namespace, data_paths: list):
             bs=args.batch_size,
             item_tfms=Resize(args.image_resize),
             batch_tfms=[
-                albumentations_tfms
-            ],  # apply data augmentations by batch after resizing
+                *aug_transforms(  # apply fastai's data augmentation transforms
+                    size=args.image_resize,  # scales images to be image_resize x image_resize
+                    flip_vert=False,  # vertical flip is not used
+                    max_rotate=10.0,  # rotate images by up to 10 degrees
+                    min_zoom=0.9,  # zoom images down to 90% of their original size
+                    max_zoom=1.1,  # zoom images up to 110% of their original size
+                    max_lighting=0.2,  # adjust lighting by up to 20%
+                    max_warp=0.2,  # warp images by up to 20%
+                    p_affine=0.5,  # probability of applying affine transformations (rotation, zoom, warp)
+                    p_lighting=0.2,  # probability of applying lighting adjustments
+                ),
+                Normalize.from_stats(
+                    *imagenet_stats
+                ),  # normalize images using ImageNet statistics
+            ],
         )
 
 
