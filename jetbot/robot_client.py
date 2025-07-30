@@ -47,12 +47,12 @@ class Bot:
 
     def execute_command(self, action_to_take, speed):
         # Execute movement commands based on action
-        if action_to_take == "forward":
+        if action_to_take == 0 or action_to_take == "forward":
             self.robot.forward(speed=speed)
-        elif action_to_take == "left":
+        elif action_to_take == 1 or action_to_take == "left":
             self.robot.left(speed=speed)
-        elif action_to_take == "right":
-            self.robot.right(speed=speed)  #
+        elif action_to_take == 2 or action_to_take == "right":
+            self.robot.right(speed=speed)
         else:
             raise ValueError(f"Unknown action: {action_to_take}")
 
