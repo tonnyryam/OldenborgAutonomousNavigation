@@ -49,8 +49,8 @@ image_file_names = []
 
 idx_to_action = {
     0: Action.FORWARD,
-    1: Action.ROTATE_RIGHT,
-    2: Action.ROTATE_LEFT,
+    1: Action.ROTATE_LEFT,
+    2: Action.ROTATE_RIGHT,
 }
 
 
